@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DocsQuiz — مُراجِع المبرمج العربي</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Tajawal", "ui-sans-serif", "system-ui", "sans-serif"] },
+          boxShadow: {
+            soft: "0 10px 25px rgba(15, 23, 42, 0.06)",
+          },
+        },
+      },
+    };
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Light, calm background */
+    body {
+      background: radial-gradient(40% 30% at 50% 0%, rgba(125, 211, 252, 0.25) 0%, rgba(236, 253, 245, 0.35) 35%, #ffffff 70%);
+      /* remove forced white text; let Tailwind control text colors */
+      min-height: 100vh;
+    }
+    .glass { backdrop-filter: blur(10px); background: rgba(255,255,255,0.7); }
+
+    /* Visual states for pills/chips you toggle via JS */
+    .lang-pill,
+    .level-pill,
+    .topic-pill {
+      transition: background-color .15s, border-color .15s, color .15s;
+      border-color: rgb(226 232 240); /* slate-200 */
+      background-color: #fff;
+      color: rgb(30 41 59); /* slate-800 */
+    }
+    .lang-pill.active,
+    .level-pill.active {
+      border-color: rgb(134 239 172); /* emerald-300 */
+      background-color: rgb(240 253 244); /* emerald-50 */
+      color: rgb(21 128 61); /* emerald-700 */
+    }
+    .topic-pill.selected {
+      border-color: rgb(56 189 248); /* sky-400-ish */
+      background-color: rgb(240 249 255); /* sky-50 */
+      color: rgb(2 132 199); /* sky-600 */
+    }
+    /* Always render code LTR inside an RTL page */
+    pre, pre code {
+      direction: ltr;
+      text-align: left;
+      unicode-bidi: plaintext; /* keeps numbers/symbols sane in mixed bidi */
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.925rem;
+      line-height: 1.6;
+    }
+    /* Optional: softer container using your glass card look */
+    pre {
+      border-radius: 0.5rem;
+    }
+  @keyframes fill-wiggle {
+    0%   { width: 0%;   }
+    50%  { width: 85%;  }
+    100% { width: 0%;   }
+  }
+  #loadingBar {
+    animation: fill-wiggle 2.4s ease-in-out infinite;
+  }
+  @keyframes shakeAnim {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.shake {
+  animation: shakeAnim 0.25s ease;
+}
+
+.toast-show {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+#toast {
+  transform: translateY(-20px);
+}
+
+
+  </style>
+</head>
+<body class="font-sans text-slate-800">
+  <!-- Top halo -->
+  <div class="pointer-events-none absolute inset-x-0 -top-24 z-0 h-64 bg-gradient-to-b from-sky-200/60 to-transparent blur-2xl"></div>
+
+  <header class="relative z-10 mx-auto w-full max-w-6xl px-5 pt-8">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="grid h-11 w-11 place-items-center rounded-xl bg-white shadow-soft">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-sky-500">
+            <path d="M4 6h16M4 12h16M4 18h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">DocsQuiz — مُراجِع المبرمج العربي</h1>
+          <p class="text-sm md:text-base text-slate-600">خايف تنسي! راجع دلوقتي مع DocQuiz</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 text-xs">
+        <span class="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700">نسخة العرض — MVP</span>
+        <span class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">بدون تسجيل دخول</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="relative z-10 mx-auto mt-6 w-full max-w-6xl px-5 pb-24">
+    <!-- CONFIG CARD -->
+    <section id="configCard" class="glass relative w-full overflow-hidden rounded-2xl border border-slate-200 p-5 md:p-6 shadow-soft">
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h3 class="text-lg md:text-xl font-semibold text-slate-900">اختر إعدادات الاختبار</h3>
+          <p class="mt-1 text-sm text-slate-600">حدّد اللغة والمستوى والمواضيع، ثم ابدأ خلال ثوانٍ.</p>
+        </div>
+        <div class="pointer-events-none select-none opacity-40">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-emerald-400">
+            <path d="M12 3v18m9-9H3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-3">
+        <!-- Language -->
+        <div class="space-y-2">
+          <p class="text-sm text-slate-600">اللغة</p>
+          <div id="langPills" class="flex gap-2">
+            <button type="button" class="lang-pill rounded-full px-3 py-1 border" data-lang="Python">بايثون</button>
+            <button type="button" class="lang-pill rounded-full px-3 py-1 border" data-lang="javascript">جافاسكريبت</button>
+          </div>
+        </div>
+        <!-- Level -->
+        <div class="space-y-2">
+          <p class="text-sm text-slate-600">المستوى</p>
+          <div id="levelPills" class="flex gap-2 mt-2">
+            <button type="button" class="level-pill rounded-full px-3 py-1 border" data-level="beginner">مبتدئ</button>
+            <button type="button" class="level-pill rounded-full px-3 py-1 border" data-level="intermediate">متوسط</button>
+            <button type="button" class="level-pill rounded-full px-3 py-1 border" data-level="advanced">متقدم</button>
+          </div>
+        </div>
+        <!-- Number -->
+        <div class="space-y-2">
+          <p class="text-sm text-slate-600">عدد الأسئلة</p>
+          <div class="flex items-center gap-3">
+            <input id="numQuestions" type="range" min="4" max="50" value="10" class="w-full accent-emerald-500" />
+            <span id="numBadge" class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs text-emerald-700">10</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Topics -->
+      <div class="mt-4">
+        <p class="mb-2 text-sm text-slate-600">المواضيع</p>
+        <div id="topicsWrap" class="flex flex-wrap gap-2 mt-3">
+          
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-col-reverse items-center justify-between gap-3 sm:flex-row">
+        <div class="flex items-center gap-3">
+          <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
+            <span>وضع الشرح المختصر</span>
+            <button type="button" id="compactToggle" class="relative h-6 w-11 rounded-full bg-emerald-300">
+              <span class="absolute right-[22px] top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition" id="compactDot"></span>
+            </button>
+            
+          </label>
+          <button type="button" id="startBtn" class="group relative inline-flex items-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-l from-emerald-500 to-teal-500 px-6 py-3 text-sm font-medium text-white shadow-soft transition hover:from-emerald-400 hover:to-teal-400">
+            <span class="absolute inset-0 -translate-y-full bg-white/30 opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100"></span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            ابدأ الاختبار الآن
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUIZ CARD -->
+    <section id="quizCard" class="mt-6 hidden glass relative w-full overflow-hidden rounded-2xl border border-slate-200 p-5 md:p-6 shadow-soft">
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900">الاختبار التفاعلي</h3>
+          <p class="mt-1 text-sm text-slate-600">أجب عن الأسئلة التالية، ثم أرسل إجاباتك لمعرفة نقاط القوة والضعف.</p>
+        </div>
+        <button type="button" id="backBtn" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">رجوع وتعديل الإعدادات</button>
+      </div>
+
+      <div id="errorBox" class="mb-3 hidden rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-700"></div>
+      <div id="questionsWrap" class="space-y-5"></div>
+
+      <div class="mt-6 flex items-center justify-end">
+        <button type="button" id="submitBtn" class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-l from-sky-500 to-indigo-500 px-6 py-3 text-sm font-medium text-white shadow-soft transition hover:from-sky-400 hover:to-indigo-400">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          إرسال الإجابات
+        </button>
+      </div>
+    </section>
+
+    <!-- RESULT CARD -->
+    <section id="resultCard" class="mt-6 hidden glass relative w-full overflow-hidden rounded-2xl border border-slate-200 p-5 md:p-6 shadow-soft">
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900">نتيجة الاختبار</h3>
+          <p class="mt-1 text-sm text-slate-600">ملخص أدائك حسب الموضوعات.</p>
+        </div>
+      
+        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+          <button
+            type="button"
+            id="newSettingsBtn"
+            class="w-full sm:w-auto rounded-2xl bg-white px-5 py-2.5 text-sm text-slate-700 hover:bg-slate-50 border border-slate-200 text-center"
+          >
+            إعدادات جديدة
+          </button>
+      
+          <button
+            type="button"
+            id="shareResultBtn"
+            class="w-full sm:w-auto rounded-2xl bg-white px-5 py-2.5 text-sm text-slate-700 hover:bg-slate-50 border border-slate-200 text-center"
+          >
+            مشاركة النتيجة
+          </button>
+      
+          <button
+            type="button"
+            id="printResultBtn"
+            class="w-full sm:w-auto rounded-2xl bg-white px-5 py-2.5 text-sm text-slate-700 hover:bg-slate-50 border border-slate-200 text-center"
+          >
+            طباعة النتيجة
+          </button>
+        </div>
+      </div>
+      
+
+      <div class="mb-4 grid gap-4 md:grid-cols-3">
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+          <p class="text-sm text-slate-600">النتيجة الإجمالية</p>
+          <p id="scoreText" class="mt-1 text-3xl font-bold text-slate-900">—</p>
+          <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-emerald-100">
+            <div id="scoreBar" class="h-full rounded-full bg-gradient-to-l from-emerald-500 to-teal-500" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-sky-200 bg-sky-50 p-5">
+          <p class="text-sm text-slate-600 mb-2">المواضيع الضعيفة</p>
+          <div id="weakWrap" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="rounded-2xl border border-fuchsia-200 bg-fuchsia-50 p-5">
+          <p class="text-sm text-slate-600">نصيحة سريعة</p>
+          <p class="mt-2 text-sm text-slate-700">ركّز على حل أسئلة قصيرة ومتكررة. التعلم النشط يرسّخ الفهم أفضل من القراءة فقط.</p>
+        </div>
+      </div>
+
+      <div id="perTopicWrap" class="space-y-4"></div>
+      <div id="wrongWrap" class="mt-6"></div>
+    </section>
+  </main>
+
+  <footer class="relative z-10 mx-auto w-full max-w-6xl px-5 pb-10 text-center text-xs text-slate-500">
+    صُمّم بروح هادئة — ألوان فاتحة، تجربة RTL عربية، تركيز على البساطة.
+  </footer>
+
+  <!-- Ambient blobs -->
+  <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute -left-24 top-32 h-64 w-64 animate-pulse rounded-full bg-emerald-200/40 blur-3xl"></div>
+    <div class="absolute -right-24 bottom-40 h-64 w-64 animate-pulse rounded-full bg-sky-200/40 blur-3xl"></div>
+  </div>
+
+  <!-- Funny Arabic Loading Overlay -->
+<div id="loadingOverlay" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-white/70 backdrop-blur-sm"></div>
+
+  <div class="relative z-10 mx-auto mt-28 w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-soft">
+    <!-- Spinner -->
+    <div class="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-emerald-500"></div>
+
+    <!-- Message -->
+    <p id="loadingMsg" class="text-slate-800 text-sm leading-6">
+      بنعملك أساله مخصوص ليك عشان انت مبرمج جامد 😎 
+    </p>
+
+    <div class="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+      <div id="loadingBar" class="h-full w-0 rounded-full bg-gradient-to-l from-emerald-500 to-teal-500"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"
+     class="fixed top-5 right-5 z-[9999] hidden min-w-[200px] max-w-xs rounded-lg bg-slate-900 text-white px-4 py-3 text-sm shadow-lg opacity-0 transition-all duration-300">
+</div>
+
+  <script>
+    // ------------------ STATE ------------------
+    let state = {
+      language: null,            // e.g. "python"
+      level: "beginner",
+      selectedTopics: [],        // array of topic NAMES (not IDs)
+      numQuestions: 10,
+      compact: true,
+      questions: null,
+      answers: {},
+      result: null,
+    };
+
+    // ------------------ HELPERS ------------------
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => Array.from(document.querySelectorAll(s));
+    const el = (tag, cls = "", html = "") => {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (html) e.innerHTML = html;
+      return e;
+    };
+
+    // Escape HTML for safety when inserting code/plain text (no replaceAll for Safari)
+    function esc(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    // Convert Markdown-ish fenced code blocks to HTML <pre><code class="language-xxx">
+    // Supports:
+    //   ```python\nprint(1)\n```
+    //   python```\nprint(1)\n```   (custom prefix style)
+    //   ```\nprint(1)\n```
+    function renderRichQuestion(text) {
+  // normalize newlines — مهم جدًا
+  text = text.replace(/\r\n/g, "\n");
+
+  // match ```lang\n code \n```
+  const fenceRe = /```([\w+-]*)\n([\s\S]*?)```/g;
+
+  let lastIndex = 0;
+  const frag = document.createDocumentFragment();
+  let match;
+
+  while ((match = fenceRe.exec(text)) !== null) {
+    // النص قبل بلوك الكود
+    const before = text.slice(lastIndex, match.index).trim();
+    if (before) {
+      const p = el(
+        "p",
+        "mb-2 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-slate-900"
+      );
+      p.textContent = before;
+      frag.appendChild(p);
+    }
+
+    const lang = match[1] || "plaintext";
+    const code = match[2];
+
+    // <pre><code>
+    const pre = el(
+      "pre",
+      "my-2 rounded-lg border border-slate-200 bg-slate-50 p-3 overflow-auto"
+    );
+    pre.setAttribute("dir", "ltr");
+
+    const codeEl = el("code", `language-${lang}`);
+    codeEl.setAttribute("dir", "ltr");
+    codeEl.textContent = code; // مهم جداً: استخدم textContent مش innerHTML
+
+    pre.appendChild(codeEl);
+    frag.appendChild(pre);
+
+    lastIndex = fenceRe.lastIndex;
+  }
+
+  // الجزء الأخير بعد آخر code block
+  const tail = text.slice(lastIndex).trim();
+  if (tail) {
+    const p = el(
+      "p",
+      "mt-2 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-slate-900"
+    );
+    p.textContent = tail;
+    frag.appendChild(p);
+  }
+
+  return frag;
+}
+
+
+
+    function loadingSkeleton() {
+      return `
+        <div class='grid gap-4 md:grid-cols-2'>
+          <div class='h-28 animate-pulse rounded-lg bg-slate-100'></div>
+          <div class='h-28 animate-pulse rounded-lg bg-slate-100'></div>
+        </div>`;
+    }
+
+    // ------------------ API ------------------
+    async function apiGenerateQuiz({ topics, language, level, num_questions }) {
+      const res = await fetch(`/generate-quiz`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // NOTE: we only send topics by NAME + language/level; backend will map topic -> URL from DB
+        body: JSON.stringify({ topics, language, level, num_questions }),
+      });
+      if (!res.ok) throw new Error("generate-quiz " + res.status);
+      return res.json(); // {questions:[...]}
+    }
+
+    async function apiSubmitQuiz({ questions, answers }) {
+      const res = await fetch(`/submit-quiz`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ questions, answers }),
+      });
+      if (!res.ok) throw new Error("submit-quiz " + res.status);
+      return res.json();
+    }
+
+    // ------------------ READ HARD-CODED HTML ------------------
+    function getAllTopicsFor(lang) {
+  const L = normLang(lang);
+  return $$("#topicsWrap .topic-pill")
+    .filter((b) => normLang(b.dataset.lang) === L)
+    .map((b) => b.dataset.topic);
+}
+
+    function renderPills() {
+  $$("#langPills .lang-pill").forEach((btn) => {
+    btn.classList.toggle("active", normLang(btn.dataset.lang) === normLang(state.language));
+    btn.onclick = () => {
+      state.language = normLang(btn.dataset.lang);   // normalize!
+      const topics = getAllTopicsFor(state.language);
+      state.selectedTopics = topics.slice(0, Math.min(2, topics.length));
+      renderTopics();
+      $$("#langPills .lang-pill").forEach((x) =>
+        x.classList.toggle("active", x === btn)
+      );
+    };
+  });
+
+  $$("#levelPills .level-pill").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.level === state.level);
+    btn.onclick = () => {
+      state.level = btn.dataset.level;
+      $$("#levelPills .level-pill").forEach((x) =>
+        x.classList.toggle("active", x === btn)
+      );
+    };
+  });
+}
+
+const normLang = (s) => (s || "").toString().trim().toLowerCase();
+
+
+// Build one pill <button>
+  function makeTopicPill({ id, lang, title }) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "topic-pill rounded-full px-4 py-1.5 border";
+  btn.dataset.id = id;
+  btn.dataset.lang = normLang(lang);   // normalize here
+  btn.dataset.topic = title;
+  btn.textContent = title;
+  return btn;
+}
+
+
+// Fetch from /topics and inject buttons
+async function loadTopics() {
+  const wrap = document.getElementById("topicsWrap");
+  if (!wrap) return;
+
+  // optional: small loading state
+  wrap.innerHTML = `<span class="text-xs text-slate-500">… بيتم تحميل المواضيع</span>`;
+
+  let rows = [];
+  try {
+    const res = await fetch("/topics");
+    if (!res.ok) throw new Error(res.status);
+    rows = await res.json(); // [{id, lang, title}, ...]
+  } catch (e) {
+    wrap.innerHTML = `<span class="text-xs text-rose-600">تعذّر تحميل المواضيع</span>`;
+    return;
+  }
+
+  // sort by lang then title (optional)
+  rows.sort((a, b) => {
+    const la = normLang(a.lang), lb = normLang(b.lang);
+    if (la !== lb) return la.localeCompare(lb);
+    return a.title.localeCompare(b.title, "en");
+  });
+
+  // fill
+  wrap.innerHTML = "";
+  rows.forEach((row) => wrap.appendChild(makeTopicPill(row)));
+
+  // (Re)bind pill handlers + apply current language filter/selection
+  renderTopics();
+}
+
+function renderTopics() {
+  $$("#topicsWrap .topic-pill").forEach((btn) => {
+    const show = state.language ? normLang(btn.dataset.lang) === normLang(state.language) : true;
+    btn.style.display = show ? "" : "none";
+
+    const topicName = btn.dataset.topic;
+    const selected = state.selectedTopics.includes(topicName);
+
+    btn.classList.toggle("selected", selected);
+    btn.onclick = () => {
+  const t = btn.dataset.topic;
+  const already = state.selectedTopics.includes(t);
+
+  if (already) {
+    // إلغاء الاختيار
+    state.selectedTopics = state.selectedTopics.filter(x => x !== t);
+  } else {
+    // منع اختيار أكثر من 3
+    if (state.selectedTopics.length >= 3) {
+      // Optional: اهتزاز خفيف للزر
+      btn.classList.add("shake");
+      setTimeout(() => btn.classList.remove("shake"), 400);
+
+      // Optional: رسالة قصيرة
+      showToast("احنا مش قدك اختار 3 مواضيع بس😂");
+
+      return;
+    }
+
+    state.selectedTopics.push(t);
+  }
+
+  renderTopics();
+};
+
+  });
+}
+
+    function ensureFences(text, langHint = "python") {
+  if (/```/.test(text)) return text; // already fenced
+
+  // Try split by double newline: "prompt\n\n<code>"
+  const dd = text.split(/\n{2,}/);
+  if (dd.length > 1) {
+    const head = dd.shift().trimEnd();
+    const tail = dd.join("\n\n").trim();
+    if (tail) return `${head}\n\n\`\`\`${langHint}\n${tail}\n\`\`\``;
+  }
+
+  // Otherwise, split at first Arabic/English question mark or colon
+  const m = text.match(/^(.*?)([؟?:]\s*)([\s\S]+)$/);
+  if (m) {
+    const head = m[1].trimEnd() + m[2];
+    const tail = m[3].trim();
+    if (tail) return `${head}\n\n\`\`\`${langHint}\n${tail}\n\`\`\``;
+  }
+
+  return text; // fallback
+}
+
+    // ------------------ QUESTIONS UI ------------------
+    function renderQuestions() {
+      const wrap = $("#questionsWrap");
+      wrap.innerHTML = "";
+      state.questions.forEach((q, idx) => {
+        const card = el("div", "rounded-xl border border-slate-200 bg-white p-4 shadow-soft");
+
+        const header = el("div", "mb-2 flex items-center justify-between");
+        header.appendChild(el("div", "flex items-center gap-2", `
+          <span class='inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700'>سؤال ${idx + 1}</span>
+          <span class='inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs text-sky-700'>موضوع: ${esc(q.topic)}</span>
+        `));
+        card.appendChild(header);
+
+        // Question text with possible fenced code → convert to HTML
+        const langHint =
+          (state.language) ||
+          (/python|بايثون/i.test(q.topic) ? "python" :
+          /javascript|جافاسكريبت/i.test(q.topic) ? "javascript" : "plaintext");
+
+        const qtext = ensureFences(q.question || "", langHint);
+        const qContainer = el("div");
+        qContainer.appendChild(renderRichQuestion(qtext));
+        card.appendChild(qContainer);
+
+        // Options (MCQ)
+        if (q.type === "mcq" || Array.isArray(q.options)) {
+          const grid = el("div", "mt-3 grid gap-2 sm:grid-cols-2");
+          q.options.forEach((opt, i) => {
+            const key = q.id || `q${idx + 1}`;
+            const picked = state.answers[key] === i;
+            const label = el(
+              "label",
+              `flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${picked ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white hover:bg-slate-50"}`
+            );
+            const input = el("input");
+            input.type = "radio";
+            input.name = key;
+            input.checked = picked;
+            input.className = "accent-emerald-500";
+            input.onclick = () => { state.answers[key] = i; };
+            const span = el("span", "text-sm text-slate-800");
+            span.textContent = opt;
+            label.appendChild(input);
+            label.appendChild(span);
+            grid.appendChild(label);
+          });
+          card.appendChild(grid);
+        }
+
+        // Optional explanation
+        if (!state.compact && q.explanation) {
+          const hint = el("div", "mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700");
+          hint.innerHTML = `<span class="font-medium text-slate-900">تلميح:</span> ${esc(q.explanation)}`;
+          card.appendChild(hint);
+        }
+
+        wrap.appendChild(card);
+        if (window.Prism) Prism.highlightAllUnder(wrap);
+
+      });
+    }
+    async function apiStoreQuizResult(payload) {
+  const res = await fetch(`/submit-quiz`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("submit-quiz " + res.status);
+  return res.json(); // مثلاً يرجّع { share_id, share_url }
+}
+
+    function gradeQuiz(questions, answersArray) {
+  const total = questions.length;
+  let score = 0;
+  const per = {};
+  const wrong_questions = [];
+
+  questions.forEach((q, i) => {
+    const userIdx = answersArray[i];
+    const correctIdx = q.correct_index;
+    const ok = userIdx === correctIdx;
+
+    if (ok) score++;
+
+    const topic = q.topic || "غير محدد";
+    if (!per[topic]) per[topic] = { correct: 0, total: 0 };
+    per[topic].total += 1;
+    if (ok) per[topic].correct += 1;
+
+    if (!ok) {
+      wrong_questions.push({
+        index: i,
+        question: q,
+        user_index: (typeof userIdx === "number" ? userIdx : null),
+        correct_index: correctIdx,
+      });
+    }
+  });
+
+  const per_topic = Object.entries(per).map(([topic, v]) => ({
+    topic,
+    correct: v.correct,
+    total: v.total,
+  }));
+
+  const weak_topics = per_topic
+    .filter((t) => t.correct / t.total < 0.7)
+    .map((t) => t.topic);
+
+  return {
+    score,
+    total,
+    per_topic,
+    weak_topics,
+    wrong_questions,
+  };
+}
+
+
+function renderResult(data) {
+  // --- ملخص الدرجات ---
+  $("#scoreText").textContent = `${data.score} / ${data.total}`;
+  const pct = Math.round((data.score / data.total) * 100);
+  $("#scoreBar").style.width = pct + "%";
+
+  // --- نقاط الضعف ---
+  const weak = $("#weakWrap");
+  weak.innerHTML = "";
+  if (data.weak_topics?.length) {
+    data.weak_topics.forEach((t) => {
+      const b = el(
+        "span",
+        "inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs text-rose-700",
+        t
+      );
+      weak.appendChild(b);
+    });
+  } else {
+    weak.appendChild(
+      el(
+        "span",
+        "inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs text-emerald-700",
+        "لا توجد نقاط ضعف واضحة"
+      )
+    );
+    $("#focusWeakBtn")?.classList.add("hidden");
+  }
+
+  // --- الأداء لكل توبك ---
+  const perWrap = $("#perTopicWrap");
+  perWrap.innerHTML = "";
+  (data.per_topic || []).forEach((t) => {
+    const pctTopic = Math.round((t.correct / t.total) * 100);
+    const isWeak = pctTopic < 70;
+    const row = el(
+      "div",
+      "rounded-xl border border-slate-200 bg-white p-4 shadow-soft"
+    );
+    row.innerHTML = `
+      <div class="mb-2 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <h4 class="text-base font-semibold text-slate-900">${t.topic}</h4>
+          <span class="inline-flex items-center gap-1 rounded-full border ${
+            isWeak
+              ? "border-rose-200 bg-rose-50 text-rose-700"
+              : "border-emerald-200 bg-emerald-50 text-emerald-700"
+          } px-3 py-1 text-xs">${pctTopic}%</span>
+        </div>
+        <span class="text-sm text-slate-600">${t.correct} من ${
+      t.total
+    } إجابات صحيحة</span>
+      </div>
+      <div class="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+        <div class="h-full rounded-full ${
+          isWeak ? "bg-rose-400" : "bg-emerald-500"
+        }" style="width:${pctTopic}%"></div>
+      </div>`;
+    perWrap.appendChild(row);
+  });
+
+  // --- عرض الأسئلة الغلط ---
+  const wrongWrap = $("#wrongWrap");
+  if (wrongWrap) {
+    wrongWrap.innerHTML = "";
+    const wrong = data.wrong_questions || [];
+
+    if (!wrong.length) {
+      wrongWrap.appendChild(
+        el(
+          "div",
+          "rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800",
+          "رائع! أجبت عن كل الأسئلة بشكل صحيح ✅"
+        )
+      );
+    } else {
+      const title = el(
+        "h3",
+        "mb-3 text-sm font-semibold text-slate-900",
+        "الأسئلة التي تم الإجابة عليها بشكل خاطئ:"
+      );
+      wrongWrap.appendChild(title);
+
+      const list = el("div", "space-y-3");
+      wrong.forEach((item) => {
+        const { question: q, user_index, correct_index } = item;
+
+        const card = el(
+          "div",
+          "rounded-xl border border-slate-200 bg-white p-3"
+        );
+
+        const qMeta = el(
+          "div",
+          "mb-1 text-xs text-slate-500",
+          `موضوع: ${q.topic || "غير محدد"}`
+        );
+        card.appendChild(qMeta);
+
+        const langHint =
+          state.language ||
+          (/python|بايثون/i.test(q.topic) ? "python" :
+           /javascript|جافاسكريبت/i.test(q.topic) ? "javascript" : "plaintext");
+
+        const qtext = ensureFences(q.question || "", langHint);
+        const qContainer = el("div");
+        qContainer.appendChild(renderRichQuestion(qtext));
+        card.appendChild(qContainer);
+
+        const ua =
+          user_index === null || user_index === undefined
+            ? "لم يتم اختيار إجابة"
+            : q.options?.[user_index];
+
+        const ca = q.options?.[correct_index];
+
+        const answersBox = el(
+          "div",
+          "mt-2 space-y-1 rounded-lg bg-slate-50 p-2 text-xs"
+        );
+        answersBox.innerHTML = `
+          <div><span class="font-semibold text-slate-900">إجابتك:</span>
+            <span class="text-slate-800">${esc(ua ?? "—")}</span>
+          </div>
+          <div><span class="font-semibold text-emerald-700">الإجابة الصحيحة:</span>
+            <span class="text-slate-900">${esc(ca ?? "—")}</span>
+          </div>
+        `;
+        card.appendChild(answersBox);
+
+        if (q.explanation) {
+          const expl = el(
+            "div",
+            "mt-2 rounded-lg border border-slate-100 bg-white p-2 text-xs text-slate-700"
+          );
+          expl.innerHTML = `<span class="font-medium text-slate-900">تفسير:</span> ${esc(
+            q.explanation
+          )}`;
+          card.appendChild(expl);
+        }
+
+        list.appendChild(card);
+      });
+
+      wrongWrap.appendChild(list);
+    }
+  }
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  // fallback قديم
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand("copy");
+  } catch (e) {}
+  document.body.removeChild(ta);
+  return Promise.resolve();
+}
+
+function isMobile() {
+  return /Android|webOS|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(
+    navigator.userAgent
+  );
+}
+function shareQuizResult() {
+  if (!state.result || !state.result.share_url) {
+    showToast("لا يوجد رابط مشاركة للنتيجة حتى الآن");
+    return;
+  }
+
+  const url = state.result.share_url;
+
+  // نحاول ننسخ للرؤية الحديثة
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url)
+      .then(() => {
+        showToast("تم نسخ رابط النتيجة 🤝");
+      })
+      .catch(() => {
+        // fallback لو الـ clipboard رفض
+        alert("انسخ الرابط التالي وشاركه:\n\n" + url);
+      });
+  } else {
+    // متصفحات أقدم
+    alert("انسخ الرابط التالي وشاركه:\n\n" + url);
+  }
+}
+
+
+
+function printQuiz() {
+  window.print(); // تقدر تزود @media print للستايل بعدين
+}
+
+
+
+    // --- Funny loading overlay ---
+const funnyLines = [
+  "بنعملك أساله مخصوص ليك عشان انت مبرمج جامد 😎 ",
+  "بنشحّن الأسئلة… امسك العصير لحد ما نرجع 🍹",
+  "اتقل شكل عربية الجيجات اتاخرت",
+  "بيب بيب بيب❤️",
+  "لو السؤال طوّل… يبقى هيطلع جامد 😎",
+  "بنظبط شكل الاسالة عشان انت تستاهل حاجه نضيفة",
+  "بنقيس مدى حلاوة الكود… لحظة بس",
+];
+
+let loadingTimer = null;
+let lineIdx = 0;
+
+function showLoading() {
+  const overlay = document.getElementById("loadingOverlay");
+  const msg = document.getElementById("loadingMsg");
+  if (!overlay || !msg) return;
+
+  overlay.classList.remove("hidden");
+  lineIdx = Math.floor(Math.random() * funnyLines.length);
+  msg.textContent = funnyLines[lineIdx];
+
+  // غيّر الجملة كل 1.4 ثانية
+  loadingTimer = setInterval(() => {
+    lineIdx = (lineIdx + 1) % funnyLines.length;
+    msg.textContent = funnyLines[lineIdx];
+  }, 3000);
+}
+
+function hideLoading() {
+  const overlay = document.getElementById("loadingOverlay");
+  if (!overlay) return;
+  overlay.classList.add("hidden");
+  if (loadingTimer) {
+    clearInterval(loadingTimer);
+    loadingTimer = null;
+  }
+}
+
+
+    // ------------------ EVENTS ------------------
+    function attachEvents() {
+      // number range
+      const num = $("#numQuestions");
+      const badge = $("#numBadge");
+      if (num && badge) {
+        num.addEventListener("input", () => {
+          state.numQuestions = parseInt(num.value || "6", 10);
+          badge.textContent = num.value;
+        });
+      }
+
+      // compact toggle
+
+
+      const toggle = document.getElementById('compactToggle');
+      const dot = document.getElementById('compactDot');
+
+      if (toggle && dot) {
+        toggle.addEventListener("click", () => {
+
+          state.compact = !state.compact;
+
+          if (state.compact) {
+            toggle.classList.remove("bg-slate-200");
+            toggle.classList.add("bg-emerald-300");
+            dot.style.right = "22px";
+          } else {
+            toggle.classList.remove("bg-emerald-300");
+            toggle.classList.add("bg-slate-200");
+            dot.style.right = "2px";
+          }
+
+          if (state.questions) renderQuestions();
+        });
+      }
+
+
+
+
+      // start quiz
+      $("#startBtn")?.addEventListener("click", async () => {
+        if (!state.language) {
+          // pick first language pill if none chosen
+          const firstLang = $("#langPills .lang-pill");
+          if (firstLang) {
+            state.language = firstLang.dataset.lang;
+          }
+        }
+        if (!state.selectedTopics.length) return showToast("اختر موضوعًا واحدًا على الأقل");
+
+        $("#configCard")?.classList.add("hidden");
+        $("#quizCard")?.classList.remove("hidden");
+        $("#errorBox")?.classList.add("hidden");
+        $("#questionsWrap").innerHTML = loadingSkeleton();
+        showLoading();
+        try {
+          const data = await apiGenerateQuiz({
+            topics: state.selectedTopics,      // names
+            language: state.language,
+            level: state.level,
+            num_questions: state.numQuestions,
+          });
+          if (!data?.questions?.length) throw new Error("No questions");
+          state.questions = data.questions;
+        } catch (e) {
+          // fallback local mock
+          const topics = state.selectedTopics.length ? state.selectedTopics : ["موضوع عام"];
+          state.questions = topics.slice(0, state.numQuestions).map((t, i) => ({
+            id: `q${i + 1}`,
+            topic: t,
+            type: "mcq",
+            question: `python\`\`\`\nprint(${i + 1})\n\`\`\``,
+            options: ["0", String(i + 1), "None", "Error"],
+            correct_index: 1,
+            explanation: "يطبع الرقم كما هو.",
+          }));
+          const err = $("#errorBox");
+          if (err) {
+            err.textContent = "تعذّر الاتصال بالخادوم، تم إنشاء اختبار تجريبي محلي.";
+            err.classList.remove("hidden");
+          }
+        }
+        finally {
+    hideLoading(); // <<< اقفل اللودينج مهما حصل
+  }
+
+        state.answers = {};
+        renderQuestions();
+      });
+
+      // back
+      $("#backBtn")?.addEventListener("click", () => {
+        $("#quizCard")?.classList.add("hidden");
+        $("#configCard")?.classList.remove("hidden");
+        state.questions = null;
+        state.answers = {};
+      });
+
+      
+            // submit
+$("#submitBtn")?.addEventListener("click", async () => {
+  if (!state.questions) return;
+
+  // 1) جهّز answersArray بالطريقة اللي عندك
+  const answersArray = state.questions.map((q, idx) => {
+    const key = q.id || `q${idx + 1}`;
+    const v = state.answers[key];
+    return typeof v === "number" ? v : -1;
+  });
+
+  // 2) احسب النتيجة محليًا
+  const stats = gradeQuiz(state.questions, answersArray);
+  // stats = { score, total, per_topic, weak_topics, wrong_questions }
+
+  // 3) خزّنها في state.result فورًا علشان تعرض للمستخدم
+  state.result = stats;
+
+  // 4) ابعت للـ backend علشان التخزين + share_url (من غير ما تعتمد عليه في الحساب)
+  try {
+    const stored = await apiStoreQuizResult({
+      // النتيجة
+      score: stats.score,
+      total: stats.total,
+      per_topic: stats.per_topic,
+      weak_topics: stats.weak_topics,
+      wrong_questions: stats.wrong_questions,
+
+      // ميتاداتا مفيدة للتخزين
+      language: state.language,
+      level: state.level,
+      topics: state.selectedTopics,
+    });
+
+    // backend ممكن يرجع share_url / share_id
+    if (stored.share_url) {
+      state.result.share_url = stored.share_url;
+    }
+    if (stored.share_id) {
+      state.result.share_id = stored.share_id;
+    }
+  } catch (e) {
+    console.error("Failed to store result", e);
+  }
+
+  $("#quizCard")?.classList.add("hidden");
+  $("#resultCard")?.classList.remove("hidden");
+  renderResult(state.result);
+});
+
+
+
+      // focus weak
+      // $("#focusWeakBtn")?.addEventListener("click", () => {
+      //   if (!state.result?.weak_topics?.length) return;
+      //   state.selectedTopics = state.result.weak_topics.slice();
+      //   $("#resultCard")?.classList.add("hidden");
+      //   $("#configCard")?.classList.remove("hidden");
+      //   renderTopics();
+      //   window.scrollTo({ top: 0, behavior: "smooth" });
+      // });
+
+      // new settings
+      $("#newSettingsBtn")?.addEventListener("click", () => {
+        $("#resultCard")?.classList.add("hidden");
+        $("#configCard")?.classList.remove("hidden");
+        state.questions = null;
+        state.answers = {};
+        state.result = null;
+      });
+      $("#shareResultBtn")?.addEventListener("click", shareQuizResult);
+      $("#printResultBtn")?.addEventListener("click", printQuiz);
+    }
+
+    function showToast(message, timeout = 3000) {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+
+  toast.textContent = message;
+  toast.classList.remove("hidden");
+  
+  // Force reflow to restart animation
+  void toast.offsetWidth;
+
+  toast.classList.add("toast-show");
+
+  setTimeout(() => {
+    toast.classList.remove("toast-show");
+    setTimeout(() => toast.classList.add("hidden"), 300);
+  }, timeout);
+}
+
+    // ------------------ INIT ------------------
+    async function init() {
+  // set initial language from the first pill or default
+  
+  const firstLangBtn = document.querySelector("#langPills .lang-pill");
+  state.language = firstLangBtn ? normLang(firstLangBtn.dataset.lang) : "python";
+
+  renderPills();
+
+  // wait for API -> DOM buttons
+  await loadTopics();     // <<< IMPORTANT
+
+  // preselect first 2 visible topics
+  const topics = getAllTopicsFor(state.language);
+  state.selectedTopics = topics.slice(0, Math.min(2, topics.length));
+
+  renderTopics();
+  attachEvents();
+  // (optional) sanity log
+  console.log("Loaded topics:", $$("#topicsWrap .topic-pill").length);
+}
+
+init();
+  </script>
+  
+</body>
+</html>

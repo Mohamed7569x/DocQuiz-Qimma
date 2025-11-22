@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Sensors — PLC Monitoring</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="/static/logo.png">
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#0f172a',
+            muted: '#6b7280',
+            border: '#e5e7eb',
+            accent: '#2563eb',
+          },
+          boxShadow: {
+            soft: '0 24px 60px -28px rgba(15,23,42,.25)',
+          },
+          borderRadius: {
+            xl2: '18px',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Align with sidebar partial -->
+  <style>
+    :root{ --sb-open-w: 18rem; --sb-mini-w: 4.25rem; }
+    @media (min-width:1024px){
+      html body main[data-with-sidebar="1"]{ margin-inline-start: var(--sb-open-w); }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-[radial-gradient(1200px_800px_at_10%_-10%,#eef3ff_0%,#f7f8fb_40%,#f7f8fb_100%)] text-ink selection:bg-accent/15 selection:text-ink">
+
+  {% include "sidebar.html" %}
+
+  <main class="p-6" style="margin-inline-start: var(--content-margin); padding-top: var(--topbar-h);" data-with-sidebar="1">
+    <!-- Header -->
+    <section class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">Sensors</h1>
+        <p class="text-muted text-sm">Manage sensors across devices</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="btnAdd" class="rounded-xl bg-accent text-white px-4 py-2.5 font-medium hover:opacity-95 active:translate-y-px">
+          + Add Sensor
+        </button>
+      </div>
+    </section>
+
+    <!-- KPI Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="rounded-2xl border border-border bg-white/80 backdrop-blur shadow-soft p-4">
+        <div class="text-sm text-muted">Total Sensors</div>
+        <div id="kpi_total" class="mt-1 text-3xl font-bold tracking-tight">—</div>
+        <div class="mt-2 text-xs text-muted" id="kpi_total_hint">Last sync now</div>
+      </div>
+      <div class="rounded-2xl border border-border bg-white/80 backdrop-blur shadow-soft p-4">
+        <div class="text-sm text-muted">Unique Types</div>
+        <div id="kpi_types" class="mt-1 text-3xl font-bold tracking-tight">—</div>
+        <div class="mt-2 text-xs text-muted">By current page</div>
+      </div>
+      <div class="rounded-2xl border border-border bg-white/80 backdrop-blur shadow-soft p-4">
+        <div class="text-sm text-muted">Units</div>
+        <div id="kpi_units" class="mt-1 text-3xl font-bold tracking-tight">—</div>
+        <div class="mt-2 text-xs text-muted">By current page</div>
+      </div>
+      <div class="rounded-2xl border border-border bg-white/80 backdrop-blur shadow-soft p-4">
+        <div class="text-sm text-muted">Devices Linked</div>
+        <div id="kpi_devices" class="mt-1 text-3xl font-bold tracking-tight">—</div>
+        <div class="mt-2 text-xs text-muted">By current page</div>
+      </div>
+    </section>
+
+    <!-- Card: Filters + Table -->
+    <section class="rounded-2xl border border-border bg-white/80 backdrop-blur shadow-soft overflow-hidden">
+      <!-- Filters -->
+      <div class="px-5 py-4 border-b border-border">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-muted mb-1">Name</label>
+            <input id="f_name" type="text" placeholder="Filter by name"
+              class="w-full rounded-xl border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-muted mb-1">Address</label>
+            <input id="f_address" type="text" placeholder="e.g. 40001 / D0"
+              class="w-full rounded-xl border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-muted mb-1">Type</label>
+            <input id="f_type" type="text" placeholder="temperature / pressure"
+              class="w-full rounded-xl border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-medium text-muted mb-1">Device</label>
+            <select id="f_device"
+              class="w-full rounded-xl border border-border px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+              <option value="">All devices</option>
+            </select>
+          </div>
+          <div class="flex items-end gap-2">
+            <button id="btnSearch"
+              class="w-full md:w-auto rounded-xl border border-border bg-white px-4 py-2.5 font-medium hover:bg-gray-50 active:translate-y-px">Search</button>
+            <button id="btnReset"
+              class="w-full md:w-auto rounded-xl border border-border bg-white px-4 py-2.5 font-medium hover:bg-gray-50 active:translate-y-px">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table id="snsTbl" class="min-w-full text-sm">
+            <thead class="sticky top-0 z-10 bg-white backdrop-blur text-gray-700 border-y border-border">
+            <tr>
+              <th class="text-left px-5 py-3 w-14">#</th>
+              <th class="text-left px-5 py-3">Name</th>
+              <th class="text-left px-5 py-3">Type</th>
+              <th class="text-left px-5 py-3">Address</th>
+              <th class="text-left px-5 py-3">Device</th>
+              <th class="text-left px-5 py-3 w-40">Min / Max</th>
+              <th class="text-left px-5 py-3">Unit</th>
+              <th class="text-left px-5 py-3">Status</th>
+              <th class="text-left px-5 py-3 w-32">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border"></tbody>
+        </table>
+
+        <!-- Skeleton -->
+        <div id="skeleton" class="p-5 space-y-3 hidden">
+          <div class="h-10 rounded-xl bg-gray-100 animate-pulse"></div>
+          <div class="h-10 rounded-xl bg-gray-100 animate-pulse"></div>
+          <div class="h-10 rounded-xl bg-gray-100 animate-pulse"></div>
+          <div class="h-10 rounded-xl bg-gray-100 animate-pulse"></div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="emptyState" class="hidden p-12 text-center">
+          <div class="mx-auto w-14 h-14 rounded-2xl bg-accent/10 text-accent grid place-items-center mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 6v12m6-6H6"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold">No sensors found</h3>
+          <p class="text-muted mt-1">Try adjusting filters or add a new sensor.</p>
+          <button id="emptyAdd" class="mt-4 inline-flex items-center gap-2 rounded-xl bg-accent text-white px-4 py-2.5 font-medium hover:opacity-95">
+            Add Sensor
+          </button>
+        </div>
+      </div>
+
+      <!-- Pager -->
+      <div class="px-5 py-4 border-t border-border flex flex-wrap items-center justify-between gap-3">
+        <span id="pgInfo" class="text-muted">Page —</span>
+        <div class="flex items-center gap-2">
+          <button id="pgPrev" class="rounded-xl border border-border bg-white px-3 py-2 hover:bg-gray-50 disabled:opacity-50">Prev</button>
+          <input id="pgInput" type="text" value="1"
+            class="w-16 text-center rounded-xl border border-border px-2 py-2 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40" />
+          <button id="pgNext" class="rounded-xl border border-border bg-white px-3 py-2 hover:bg-gray-50 disabled:opacity-50">Next</button>
+          <select id="pgSize"
+            class="rounded-xl border border-border px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+            <option>10</option><option>25</option><option>50</option>
+          </select>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+<div id="dlg" class="fixed inset-0 z-50 hidden grid place-items-center bg-black/30 p-4">
+    <div class="w-full max-w-lg sm:max-w-xl md:max-w-2xl rounded-2xl border border-border bg-white shadow-soft ring-1 ring-border overflow-hidden">
+
+      <!-- Header (sticky) -->
+      <div class="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-border bg-white/95 backdrop-blur">
+        <span id="dlgTitle" class="font-semibold">Add Sensor</span>
+        <button id="dlgClose" class="rounded-lg px-2 py-1.5 hover:bg-gray-100">✕</button>
+      </div>
+  
+      <!-- Body (scrolls) -->
+      <div class="px-5 py-4 max-h-[75vh] overflow-y-auto">
+        <form id="frm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Device -->
+          <div class="md:col-span-2">
+            <label for="m_device" class="block text-sm text-muted mb-1">Device</label>
+            <select id="m_device" required
+                    class="w-full rounded-xl border border-border px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40"></select>
+            <div id="e_device" class="text-red-600 text-xs mt-1 min-h-[1rem]"></div>
+          </div>
+  
+          <!-- Name -->
+          <div>
+            <label for="m_name" class="block text-sm text-muted mb-1">Name</label>
+            <input id="m_name" type="text" required
+                   class="w-full rounded-xl border border-border bg-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+            <div id="e_name" class="text-red-600 text-xs mt-1 min-h-[1rem]"></div>
+          </div>
+  
+          <!-- Sensor Type -->
+          <div>
+            <label for="m_type" class="block text-sm text-muted mb-1">Sensor Type</label>
+            <select id="m_type" name="type" required aria-describedby="e_type"
+                    class="w-full rounded-xl border border-border px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+              <option value="" disabled selected>Select type</option>
+              <option value="TEMPERATURE">Temperature</option>
+              <option value="PRESSURE">Pressure</option>
+              <option value="LEVEL">Level</option>
+              <option value="FLOW">Flow</option>
+              <option value="PROXIMITY">Proximity</option>
+              <option value="INDUCTIVE">Inductive</option>
+              <option value="CAPACITIVE">Capacitive</option>
+              <option value="PHOTOELECTRIC">Photoelectric</option>
+              <option value="ULTRASONIC_DISTANCE">Ultrasonic Distance</option>
+              <option value="CURRENT">Current</option>
+              <option value="VOLTAGE">Voltage</option>
+              <option value="VIBRATION">Vibration</option>
+              <option value="HUMIDITY">Humidity</option>
+              <option value="GAS">Gas</option>
+              <option value="SPEED">Speed</option>
+              <option value="SWITCH">Switch</option>
+            </select>
+            <div id="e_type" class="text-red-600 text-xs mt-1 min-h-[1rem]" role="alert" aria-live="polite"></div>
+          </div>
+  
+          <!-- Status -->
+          <div>
+            <label for="m_status" class="block text-sm text-muted mb-1">Status</label>
+            <select id="m_status" name="status" required aria-describedby="e_status"
+                    class="w-full rounded-xl border border-border px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+              <option value="ACTIVE" selected>ACTIVE</option>
+              <option value="OFFLINE">OFFLINE</option>
+              <option value="MAINTENANCE">MAINTENANCE</option>
+              <option value="FAULT">FAULT</option>
+              <option value="WARNING">WARNING</option>
+              <option value="DISABLED">DISABLED</option>
+              <option value="UNKNOWN">UNKNOWN</option>
+            </select>
+            <div id="e_status" class="text-red-600 text-xs mt-1 min-h-[1rem]" role="alert" aria-live="polite"></div>
+          </div>
+  
+          <!-- Unit -->
+          <div>
+            <label for="m_unit" class="block text-sm text-muted mb-1">Unit</label>
+            <input id="m_unit" type="text" placeholder="°C, bar, m/s…" required
+                   class="w-full rounded-xl border border-border bg-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+            <div id="e_unit" class="text-red-600 text-xs mt-1 min-h-[1rem]"></div>
+          </div>
+  
+          <!-- Address -->
+          <div>
+            <label for="m_address" class="block text-sm text-muted mb-1">Address</label>
+            <input id="m_address" type="text" placeholder="40001 / D0" required
+                   class="w-full rounded-xl border border-border bg-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+            <div id="e_address" class="text-red-600 text-xs mt-1 min-h-[1rem]"></div>
+          </div>
+  
+          <!-- Min -->
+          <div>
+            <label for="m_min" class="block text-sm text-muted mb-1">Min Value</label>
+            <input id="m_min" type="number" step="any"
+                   class="w-full rounded-xl border border-border bg-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+            <div id="e_min" class="text-red-600 text-xs mt-1 min-h-[1rem]"></div>
+          </div>
+  
+          <!-- Max -->
+          <div>
+            <label for="m_max" class="block text-sm text-muted mb-1">Max Value</label>
+            <input id="m_max" type="number" step="any"
+                   class="w-full rounded-xl border border-border bg-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+            <div id="e_max" class="text-red-600 text-xs mt-1 min-h-[1rem]"></div>
+          </div>
+          
+<!-- ========== Behavior Config (Advanced) ========== -->
+<div class="md:col-span-2 mt-2">
+    <div class="rounded-2xl border border-border">
+      <button type="button" id="cfgToggle"
+        class="w-full flex items-center justify-between px-4 py-3 text-left">
+        <span class="font-semibold">Behavior Config (Advanced)</span>
+        <span id="cfgChevron" class="transition">▼</span>
+      </button>
+  
+      <div id="cfgBody" class="px-4 pt-1 pb-4 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+  
+          <!-- Max rise / drop -->
+          <div>
+            <label for="m_cfg_max_rise" class="block text-sm text-muted mb-1">
+              Max Rise Rate (Δ / sec)
+            </label>
+            <input id="m_cfg_max_rise" type="number" step="any" placeholder="e.g., 2.5"
+                   class="w-full rounded-xl border border-border bg-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+            <div id="e_cfg_max_rise" class="text-red-600 text-xs mt-1 min-h-[1rem]"></div>
+          </div>
+  
+          <div>
+            <label for="m_cfg_max_drop" class="block text-sm text-muted mb-1">
+              Max Drop Rate (|Δ| / sec)
+            </label>
+            <input id="m_cfg_max_drop" type="number" step="any" placeholder="e.g., 1"
+                   class="w-full rounded-xl border border-border bg-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+            <div id="e_cfg_max_drop" class="text-red-600 text-xs mt-1 min-h-[1rem]"></div>
+          </div>
+  
+          <!-- Flatline + Expected trend -->
+          <div>
+            <label for="m_cfg_flatline" class="block text-sm text-muted mb-1">
+              Flatline Timeout (s)
+            </label>
+            <input id="m_cfg_flatline" type="number" step="1" placeholder="e.g., 10"
+                   class="w-full rounded-xl border border-border bg-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+            <div id="e_cfg_flatline" class="text-red-600 text-xs mt-1 min-h-[1rem]"></div>
+          </div>
+  
+          <div>
+            <label for="m_cfg_trend" class="block text-sm text-muted mb-1">
+              Expected Trend
+            </label>
+            <select id="m_cfg_trend"
+                    class="w-full rounded-xl border border-border px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+              <option value="">— Not enforced —</option>
+              <option value="increasing">Increasing</option>
+              <option value="decreasing">Decreasing</option>
+              <option value="stable">Stable</option>
+            </select>
+            <div id="e_cfg_trend" class="text-red-600 text-xs mt-1 min-h-[1rem]"></div>
+          </div>
+  
+          <!-- Optional actuator relation -->
+          <div>
+            <label for="m_cfg_actuator" class="block text-sm text-muted mb-1">
+              Associated Actuator (optional)
+            </label>
+            <input id="m_cfg_actuator" type="text" placeholder="e.g., PumpIn, Heater"
+                   class="w-full rounded-xl border border-border bg-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+          </div>
+          <div>
+            <label for="m_cfg_effect" class="block text-sm text-muted mb-1">
+              Expected Effect (optional)
+            </label>
+            <input id="m_cfg_effect" type="text" placeholder="e.g., 'Level increases'"
+                   class="w-full rounded-xl border border-border bg-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ========== /Behavior Config ========== -->
+  
+
+          <!-- Actions -->
+          <div class="md:col-span-2 flex items-center justify-end gap-2 pt-2">
+            <button type="button" id="dlgCancel"
+                    class="rounded-xl border border-border bg-white px-4 py-2.5 font-medium hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" id="dlgSave"
+                    class="rounded-xl bg-accent text-white px-5 py-2.5 font-medium hover:opacity-95 active:translate-y-px">
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 z-[60] hidden">
+    <div class="rounded-xl bg-gray-900 text-white px-4 py-3 shadow-2xl/50 shadow-xl text-sm" id="toastMsg">Saved</div>
+  </div>
+
+  <script>
+    /* ================= CONFIG ================= */
+    const API_BASE = "";
+    const EP_SENSOR_LIST   = "/api/v1/sensor";
+    const EP_SENSOR_CREATE = "/api/v1/sensor";
+    const EP_SENSOR_UPDATE = "/api/v1/sensor"; // ?sensorId=<id>
+    const UPDATE_ID_PARAM  = "sensorId";
+
+    const EP_DEVICE_LIST   = "/api/v1/device"; // to populate device selects
+    const EP_SENSOR_CONFIG_GET   = "/api/v1/sensor/config";              // GET ?sensorId=<id>
+    const EP_SENSOR_CONFIG_UPSERT= "/api/v1/sensor/config";              // POST {sensor_id,...}
+    const EP_TEMPLATE_LIST       = "/api/v1/template";                   // GET list
+    const EP_TEMPLATE_ATTACH     = "/api/v1/template/attach";            // POST { template_id, sensor_ids: [] }
+
+    /* ================= STATE ================= */
+    const state = {
+      page: 1, per_page: 10, total: 0,
+      items: [],
+      editing: null,
+      filters: { name:"", address:"", type:"", device_id:"" },
+      loading: false,
+      devices: [], // [{id, name}]
+      templates: [],
+    };
+
+    /* ================= HELPERS ================= */
+    const $ = s => document.querySelector(s);
+    const escapeHtml = s => String(s).replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+    const qs = (obj) => {
+      const p = new URLSearchParams();
+      Object.entries(obj).forEach(([k,v])=>{
+        if(v!==undefined && v!==null && String(v)!=="") p.append(k,v);
+      });
+      return p.toString();
+    };
+    function showToast(msg){
+      $("#toastMsg").textContent = msg;
+      const t = $("#toast"); t.classList.remove("hidden");
+      clearTimeout(t._to); t._to = setTimeout(()=> t.classList.add("hidden"), 2000);
+    }
+    function showSkeleton(on){
+      $("#skeleton").classList.toggle("hidden", !on);
+      $("#emptyState").classList.add("hidden");
+      const tb = $("#snsTbl tbody");
+      if(on) tb.innerHTML = "";
+    }
+
+    function updateKpis(){
+      const total = state.total || state.items.length;
+      const types = new Set(state.items.map(d => String(d.type||"").toLowerCase()).filter(Boolean)).size;
+      const units = new Set(state.items.map(d => String(d.unit||"").toLowerCase()).filter(Boolean)).size;
+      const devs  = new Set(state.items.map(d => d.device?.id || d.device_id).filter(Boolean)).size;
+      $("#kpi_total").textContent  = total;
+      $("#kpi_types").textContent  = types;
+      $("#kpi_units").textContent  = units;
+      $("#kpi_devices").textContent= devs;
+      $("#kpi_total_hint").textContent = "Last sync: " + new Date().toLocaleTimeString();
+    }
+
+    /* ================= API ================= */
+    async function fetchTemplates(){
+  const url = API_BASE + EP_TEMPLATE_LIST + "?" + qs({ page:1, per_page: 1000 });
+  const res = await fetch(url, { cache:"no-store" });
+  if(!res.ok) throw new Error("Templates fetch failed: " + res.status);
+  const data = await res.json();
+  state.templates = data.items || [];
+}
+
+async function fetchSensorConfig(sensorId){
+  const url = API_BASE + EP_SENSOR_CONFIG_GET + "?" + qs({ sensorId });
+  const res = await fetch(url, { cache:"no-store" });
+  if(res.status === 404) return null;     // no config yet
+  if(!res.ok) throw new Error("Config fetch failed: " + res.status);
+  return await res.json();
+}
+
+async function upsertSensorConfig(payload){ // {sensor_id, max_rise_rate, ...}
+  const res = await fetch(API_BASE + EP_SENSOR_CONFIG_UPSERT, {
+    method: "POST", headers: { "Content-Type":"application/json" }, body: JSON.stringify(payload),
+  });
+  if(!res.ok) throw new Error("Config save failed: " + res.status);
+  return res.json();
+}
+
+// async function attachTemplateToSensors(template_id, sensor_ids){
+//   const res = await fetch(API_BASE + EP_TEMPLATE_ATTACH, {
+//     method: "POST", headers: { "Content-Type":"application/json" },
+//     body: JSON.stringify({ template_id, sensor_ids })
+//   });
+//   if(!res.ok) throw new Error("Template attach failed: " + res.status);
+//   return res.json();
+// }
+
+
+    async function fetchDevicesOptions(){
+      const url = API_BASE + EP_DEVICE_LIST + "?" + qs({ page:1, per_page: 1000 });
+      const res = await fetch(url, { cache:"no-store" });
+      if(!res.ok) throw new Error("Devices fetch failed: " + res.status);
+      const data = await res.json();
+      state.devices = data.items || [];
+      state.deviceMap = new Map(
+  (state.devices || []).map(d => [String(d.id), d])
+);
+
+      // Fill filter select
+      const selF = $("#f_device");
+      const curF = selF.value;
+      selF.innerHTML = '<option value="">All devices</option>' + state.devices
+        .map(d=>`<option value="${escapeHtml(d.id)}">${escapeHtml(d.name || d.id)}</option>`).join("");
+      if(curF) selF.value = curF;
+
+      // Fill modal select
+      const selM = $("#m_device");
+      selM.innerHTML = state.devices
+        .map(d=>`<option value="${escapeHtml(d.id)}">${escapeHtml(d.name || d.id)}</option>`).join("");
+    }
+
+    async function fetchSensors(){
+      state.loading = true; showSkeleton(true);
+      const params = {
+        page: state.page, per_page: state.per_page,
+        name: state.filters.name || undefined,
+        address: state.filters.address || undefined,
+        type: state.filters.type || undefined,
+        device_id: state.filters.device_id || undefined,
+      };
+      const url = API_BASE + EP_SENSOR_LIST + "?" + qs(params);
+      const res = await fetch(url, { cache:"no-store" });
+      if(!res.ok){ state.loading=false; showSkeleton(false); throw new Error("Failed to fetch sensors: " + res.status); }
+      const data = await res.json();
+      state.items = data.items || [];
+      state.total = data.total ?? state.items.length;
+      state.page = data.page || state.page;
+      state.per_page = data.per_page || state.per_page;
+      state.loading = false; showSkeleton(false);
+      renderTable();
+      renderPager();
+      updateKpis();
+      $("#emptyState").classList.toggle("hidden", state.items.length>0);
+    }
+
+    async function createSensor(payload){
+      const res = await fetch(API_BASE + EP_SENSOR_CREATE, {
+        method: "POST", headers: { "Content-Type":"application/json" }, body: JSON.stringify(payload),
+      });
+      if(!res.ok){ throw new Error("Create failed: " + res.status); }
+      return res.json();
+    }
+
+    async function updateSensor(id, payload){
+      const url = API_BASE + EP_SENSOR_UPDATE + "?" + UPDATE_ID_PARAM + "=" + encodeURIComponent(id);
+      const res = await fetch(url, {
+        method: "PUT", headers: { "Content-Type":"application/json" }, body: JSON.stringify(payload),
+      });
+      if(!res.ok){ throw new Error("Update failed: " + res.status); }
+      return res.json();
+    }
+
+    function badge(status){
+      if(!status) return "";
+      const s = String(status);
+      if(s==="ACTIVE") return '<span class="inline-flex items-center rounded-full border border-green-200 bg-green-50 text-green-700 px-2.5 py-1 text-xs font-semibold">ACTIVE</span>';
+      if(s==="OFFLINE") return '<span class="inline-flex items-center rounded-full border border-red-200 bg-red-50 text-red-700 px-2.5 py-1 text-xs font-semibold">OFFLINE</span>';
+      return '<span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 px-2.5 py-1 text-xs font-semibold">'+status+'</span>';
+    }
+    /* ================= RENDER ================= */
+    function renderTable(){
+      const tb = $("#snsTbl tbody"); tb.innerHTML = "";
+      if(!state.items.length) return;
+
+      state.items.forEach((d, idx)=>{
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-[#fafcff]/80";
+        const devMap = state.deviceMap || new Map((state.devices||[]).map(d => [String(d.id), d]));
+        const deviceName = devMap.get(String(d.device_id))?.name || d.device_id || "—";
+
+        const minmax = [d.min_value, d.max_value].map(v => (v ?? "") === "" ? "—" : v).join(" / ");
+        tr.innerHTML = `
+          <td class="px-5 py-3 text-gray-700">${((state.page-1)*state.per_page) + idx + 1}</td>
+          <td class="px-5 py-3 font-medium">${escapeHtml(d.name || "")}</td>
+          <td class="px-5 py-3">${escapeHtml(d.type || "")}</td>
+          <td class="px-5 py-3">${escapeHtml(d.address || "")}</td>
+          <td class="px-5 py-3">${escapeHtml(deviceName)}</td>
+          <td class="px-5 py-3">${escapeHtml(minmax)}</td>
+          <td class="px-5 py-3">${escapeHtml(d.unit || "")}</td>
+          <td class="px-5 py-3">${badge(d.status)}</td>
+          <td class="px-5 py-3">
+            <div class="flex items-center gap-2">
+              <button data-act="edit" data-id="${d.id}"
+                class="rounded-lg border border-border bg-white px-3 py-1.5 hover:bg-gray-50">
+                Edit
+              </button>
+            </div>
+          </td>
+        `;
+        tb.appendChild(tr);
+      });
+
+      tb.querySelectorAll('button[data-act="edit"]').forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const id = btn.getAttribute("data-id");
+          const row = state.items.find(x=>String(x.id)===String(id));
+          openModal(row);
+        });
+      });
+    }
+
+    function renderPager(){
+      const totalPages = Math.max(1, Math.ceil(state.total / state.per_page));
+      $("#pgInfo").textContent = `Page ${state.page} / ${totalPages} — ${state.total} items`;
+      $("#pgInput").value = state.page;
+      $("#pgPrev").disabled = state.page <= 1;
+      $("#pgNext").disabled = state.page >= totalPages;
+    }
+
+    /* ================= EVENTS ================= */
+    // Advanced Config accordion
+const cfgToggle = document.getElementById("cfgToggle");
+cfgToggle.addEventListener("click", ()=>{
+  const body = document.getElementById("cfgBody");
+  const chev = document.getElementById("cfgChevron");
+  const open = body.classList.toggle("hidden");
+  chev.style.transform = open ? "rotate(0deg)" : "rotate(180deg)";
+});
+
+// Fill Template dropdown
+// function renderTemplatesSelect(){
+//   const sel = document.getElementById("m_cfg_template");
+//   const cur = sel.value;
+//   sel.innerHTML = '<option value="">— None —</option>' + (state.templates||[])
+//     .map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name || t.id)}</option>`).join("");
+//   if(cur) sel.value = cur;
+// }
+
+// Reset config fields
+function resetConfigFields(){
+  $("#m_cfg_max_rise").value = "";
+  $("#m_cfg_max_drop").value = "";
+  $("#m_cfg_flatline").value = "";
+  $("#m_cfg_trend").value = "";
+  $("#m_cfg_actuator").value = "";
+  $("#m_cfg_effect").value = "";
+  ["e_cfg_max_rise","e_cfg_max_drop","e_cfg_flatline","e_cfg_trend"].forEach(id=>$("#"+id).textContent="");
+}
+
+// Load config for a sensor into modal
+async function loadConfigIntoModal(sensorId){
+  resetConfigFields();
+  try{
+    const cfg = sensorId ? await fetchSensorConfig(sensorId) : null;
+    // renderTemplatesSelect();
+    if(!cfg) return;
+
+    // backend could return { template_id, max_rise_rate, ... }
+    // if(cfg.template_id) $("#m_cfg_template").value = cfg.template_id;
+    if(cfg.max_rise_rate != null) $("#m_cfg_max_rise").value = cfg.max_rise_rate;
+    if(cfg.max_drop_rate != null) $("#m_cfg_max_drop").value = cfg.max_drop_rate;
+    if(cfg.flatline_timeout_s != null) $("#m_cfg_flatline").value = cfg.flatline_timeout_s;
+    if(cfg.expected_trend) $("#m_cfg_trend").value = cfg.expected_trend;
+    if(cfg.associated_actuator) $("#m_cfg_actuator").value = cfg.associated_actuator;
+    if(cfg.expected_effect) $("#m_cfg_effect").value = cfg.expected_effect;
+  }catch(e){
+    // non-blocking
+  }
+}
+
+// Collect config payload from modal
+function readConfigFromModal(sensor_id){
+  // const template_id = $("#m_cfg_template").value || null;
+  const max_rise_rate = $("#m_cfg_max_rise").value === "" ? null : Number($("#m_cfg_max_rise").value);
+  const max_drop_rate = $("#m_cfg_max_drop").value === "" ? null : Number($("#m_cfg_max_drop").value);
+  const flatline_timeout_s = $("#m_cfg_flatline").value === "" ? null : Number($("#m_cfg_flatline").value);
+  const expected_trend = $("#m_cfg_trend").value || null;
+  const associated_actuator = $("#m_cfg_actuator").value.trim() || null;
+  const expected_effect = $("#m_cfg_effect").value.trim() || null;
+
+  return {
+    sensor_id, max_rise_rate, max_drop_rate, flatline_timeout_s,
+    expected_trend, associated_actuator, expected_effect
+  };
+}
+
+// True if user actually filled any config (so we don't spam backend for empty)
+function hasAnyConfigFilled(){
+  return ["#m_cfg_max_rise","#m_cfg_max_drop","#m_cfg_flatline","#m_cfg_trend","#m_cfg_actuator","#m_cfg_effect"]
+    .some(sel => (document.querySelector(sel).value || "").trim() !== "");
+}
+
+
+    $("#btnSearch").addEventListener("click", ()=>{
+      state.filters.name = $("#f_name").value.trim();
+      state.filters.address = $("#f_address").value.trim();
+      state.filters.type = $("#f_type").value.trim();
+      state.filters.device_id = $("#f_device").value.trim();
+      state.page = 1;
+      fetchSensors().catch(err=>showToast(err.message));
+    });
+
+    $("#btnReset").addEventListener("click", ()=>{
+      $("#f_name").value = $("#f_address").value = $("#f_type").value = "";
+      $("#f_device").value = "";
+      state.filters = { name:"", address:"", type:"", device_id:"" };
+      state.page = 1;
+      fetchSensors().catch(err=>showToast(err.message));
+    });
+
+    $("#pgPrev").addEventListener("click", ()=>{
+      if(state.page>1){ state.page--; fetchSensors().catch(err=>showToast(err.message)); }
+    });
+    $("#pgNext").addEventListener("click", ()=>{
+      const totalPages = Math.max(1, Math.ceil(state.total / state.per_page));
+      if(state.page<totalPages){ state.page++; fetchSensors().catch(err=>showToast(err.message)); }
+    });
+    $("#pgInput").addEventListener("change", (e)=>{
+      const v = parseInt(e.target.value || "1", 10);
+      const totalPages = Math.max(1, Math.ceil(state.total / state.per_page));
+      state.page = Math.min(Math.max(1, v), totalPages);
+      fetchSensors().catch(err=>showToast(err.message));
+    });
+    $("#pgSize").addEventListener("change", (e)=>{
+      state.per_page = parseInt(e.target.value, 10);
+      state.page = 1;
+      fetchSensors().catch(err=>showToast(err.message));
+    });
+
+    $("#emptyAdd").addEventListener("click", ()=> openModal(null));
+    $("#btnAdd").addEventListener("click", ()=> openModal(null));
+
+    // Modal plumbing
+    const dlg = $("#dlg");
+    $("#dlgClose").addEventListener("click", closeModal);
+    $("#dlgCancel").addEventListener("click", closeModal);
+
+    async function openModal(row){
+  clearErrors();
+  resetConfigFields();
+  state.editing = row ? { ...row } : null;
+  $("#dlgTitle").textContent = row ? "Edit Sensor" : "Add Sensor";
+
+  // fill device select
+  const sel = $("#m_device");
+  sel.innerHTML = state.devices.map(d=>`<option value="${escapeHtml(d.id)}">${escapeHtml(d.name || d.id)}</option>`).join("");
+
+  $("#m_device").value  = row?.device?.id || row?.device_id || (state.devices[0]?.id || "");
+  $("#m_name").value    = row?.name || "";
+  $("#m_type").value    = row?.type || "";
+  $("#m_status").value  = row?.status || "ACTIVE";
+  $("#m_unit").value    = row?.unit || "";
+  $("#m_address").value = row?.address || "";
+  $("#m_min").value     = (row?.min_value ?? "") === null ? "" : (row?.min_value ?? "");
+  $("#m_max").value     = (row?.max_value ?? "") === null ? "" : (row?.max_value ?? "");
+
+  // NEW: templates & existing config
+  try{
+    // if(!state.templates.length){ await fetchTemplates(); }
+    // renderTemplatesSelect();
+    await loadConfigIntoModal(row?.id || null);
+  } catch(e){ /* non-blocking */ }
+
+  dlg.classList.remove("hidden"); dlg.classList.add("grid");
+}
+
+    function closeModal(){
+      dlg.classList.add("hidden");
+      dlg.classList.remove("grid");
+      state.editing = null;
+    }
+    function clearErrors(){
+      ["e_device","e_name","e_type","e_unit","e_address","e_min","e_max"].forEach(id=>$("#"+id).textContent="");
+    }
+
+    // Allowed enums (keep in sync with backend)
+const ALLOWED_SENSOR_TYPES = [
+  "TEMPERATURE","PRESSURE","LEVEL","FLOW","PROXIMITY","INDUCTIVE","CAPACITIVE",
+  "PHOTOELECTRIC","ULTRASONIC_DISTANCE","CURRENT","VOLTAGE","VIBRATION",
+  "HUMIDITY","GAS","SPEED","SWITCH"
+];
+
+const ALLOWED_SENSOR_STATUS = [
+  "ACTIVE","OFFLINE","MAINTENANCE","FAULT","WARNING","DISABLED","UNKNOWN"
+];
+
+$("#frm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearErrors();
+
+  const payload = {
+    device_id: $("#m_device").value.trim(),
+    name: $("#m_name").value.trim(),
+    type: $("#m_type").value,        // from <select>
+    status: $("#m_status").value,    // NEW: from <select>
+    unit: $("#m_unit").value.trim(),
+    address: $("#m_address").value.trim(),
+    min_value: $("#m_min").value === "" ? null : Number($("#m_min").value),
+    max_value: $("#m_max").value === "" ? null : Number($("#m_max").value),
+  };
+
+  // basic validation
+  let ok = true;
+
+  if (!payload.device_id) { $("#e_device").textContent = "Device is required"; ok = false; }
+  if (!payload.name)      { $("#e_name").textContent = "Name is required"; ok = false; }
+  if (!payload.type)      { $("#e_type").textContent = "Type is required"; ok = false; }
+  if (!payload.unit)      { $("#e_unit").textContent = "Unit is required"; ok = false; }
+  if (!payload.address)   { $("#e_address").textContent = "Address is required"; ok = false; }
+  if ($("#m_min").value !== "" && isNaN(payload.min_value)) { $("#e_min").textContent = "Min must be a number"; ok = false; }
+  if ($("#m_max").value !== "" && isNaN(payload.max_value)) { $("#e_max").textContent = "Max must be a number"; ok = false; }
+
+  // enum validation
+  if (payload.type && !ALLOWED_SENSOR_TYPES.includes(payload.type)) {
+    $("#e_type").textContent = "Invalid sensor type"; ok = false;
+  }
+  if (!payload.status || !ALLOWED_SENSOR_STATUS.includes(payload.status)) {
+    $("#e_status").textContent = "Invalid status"; ok = false;
+  }
+
+  // logical check: min <= max when both provided
+  if (payload.min_value !== null && payload.max_value !== null &&
+      payload.min_value > payload.max_value) {
+    $("#e_max").textContent = "Max must be ≥ Min"; ok = false;
+  }
+
+  if (!ok) return;
+
+  try {
+  let saved;
+  if (state.editing && state.editing.id != null) {
+    saved = await updateSensor(state.editing.id, payload);
+  } else {
+    saved = await createSensor(payload);
+  }
+  const sensorId = saved?.id || state.editing?.id;
+
+  // If user provided any Behavior Config, upsert it
+  if (sensorId && hasAnyConfigFilled()){
+    const cfgPayload = readConfigFromModal(sensorId);
+    await upsertSensorConfig(cfgPayload);
+
+    // If a template is selected, attach it (optional; depends on your backend design)
+    // if (cfgPayload.template_id){
+    //   await attachTemplateToSensors(cfgPayload.template_id, [sensorId]);
+    // }
+  }
+
+  showToast(state.editing ? "Sensor updated" : "Sensor added");
+  closeModal();
+  fetchSensors().catch(err => showToast(err.message));
+} catch (err) {
+  showToast(err.message);
+}
+
+});
+
+
+    /* ================= INIT ================= */
+    (async function init(){
+      try{
+        await fetchDevicesOptions();
+      }catch(e){ /* non-blocking for page */ }
+      fetchSensors().catch(err=>showToast(err.message));
+    })();
+  </script>
+</body>
+</html>

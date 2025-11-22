@@ -1,0 +1,393 @@
+<!-- ===== Sidebar Partial (Topbar + Mini-Rail, No Floating Button) ===== -->
+<style>
+    :root{
+      --panel-1:#ffffff; --panel-3:#eef3ff;
+      --ink:#0f172a; --muted:#5b6476; --border:#e5e7ef;
+      --accent-ink:#0b3b9e; --accent:#2563eb;
+      --radius:12px;
+  
+      --sb-open-w:18rem;   /* sidebar open width */
+      --sb-mini-w:4.25rem; /* mini rail width  */
+      --content-margin: var(--sb-open-w); /* synced by JS */
+      --topbar-h:56px; /* topbar height */
+    }
+  
+    /* ===== Topbar ===== */
+    #sb-topbar{
+      position:sticky; top:0; z-index:45;
+      height:var(--topbar-h);
+      display:grid; grid-template-columns:auto 1fr auto; /* left | center | right */
+      align-items:center; gap:.75rem; padding:0 12px;
+      background:#ffffffcc; backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    #sb-topbar .left-controls,
+    #sb-topbar .right-actions{ display:flex; align-items:center; gap:.5rem; }
+    #sb-topbar .brand{ display:flex; align-items:center; gap:.6rem; justify-self:center; min-width:0; }
+    #sb-topbar img{ width:28px; height:28px; border-radius:6px }
+    #sb-topbar .brand .name{ font-weight:800; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  
+    .icon-btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:36px; height:36px; border-radius:10px; border:1px solid var(--border);
+      background:#fff; color:#334155; cursor:pointer;
+    }
+    .icon-btn:hover{ background:#f6f8ff; color:#0b3b9e }
+    .icon-btn svg{ width:18px; height:18px }
+  
+    /* Show hamburger on mobile; desktop mini toggle on ≥lg */
+    #sidebarOpen{ display:inline-flex }
+    #sidebarDesktopToggle{ display:none }
+    @media (min-width:1024px){
+      #sidebarOpen{ display:none }
+      #sidebarDesktopToggle{ display:inline-flex }
+    }
+  
+    /* ===== Sidebar (left) ===== */
+    #sidebar{
+      width:var(--sb-open-w);
+      height:100vh;
+      display:flex; flex-direction:column;
+      transition:width .2s ease, transform .2s ease;
+      overflow:hidden; will-change:width;
+      background:linear-gradient(180deg,var(--panel-1),#f7f9ff);
+      border-right:1px solid var(--border);
+      position:fixed; inset-block:0; inset-inline-start:0;
+      z-index:50;
+      transform: translateX(-100%); /* mobile off-canvas by default */
+    }
+    #sidebar.force-open{ transform: translateX(0); }
+  
+    @media (min-width:1024px){
+      #sidebar{ transform:none !important; }
+      #sidebar[data-mini="1"]{ width:var(--sb-mini-w); }
+      #sidebar[data-mini="1"].hovering{ width:var(--sb-open-w); }
+    }
+  
+    /* Mobile scrim */
+    #sb-scrim{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:49; display:none }
+    #sb-scrim.show{ display:block }
+    body.sb-locked{ overflow:hidden; touch-action:none }
+  
+    /* Sidebar header */
+    .sb-head{
+      display:grid; grid-template-columns:var(--sb-mini-w) 1fr auto; align-items:center;
+      border-bottom:1px solid var(--border); padding-inline:.25rem; min-height:56px;
+    }
+    .sb-head .rail{ display:flex; align-items:center; justify-content:center; height:56px }
+    .sb-head img{ width:28px; height:28px; border-radius:6px }
+    .sb-head .label{
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      font-weight:800; color:var(--ink); transition:opacity .15s, transform .15s;
+    }
+    #sidebar[data-mini="1"] .sb-head .label{ opacity:0; transform:translateX(8px) }
+    #sidebar[data-mini="1"].hovering .sb-head .label,
+    #sidebar.force-open .sb-head .label{ opacity:1; transform:none }
+  
+    /* Scroll area */
+    #sidebar .sidebar-scroll{
+      flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+      -webkit-mask-image:linear-gradient(to bottom,transparent,black 16px,black calc(100% - 16px),transparent);
+              mask-image:linear-gradient(to bottom,transparent,black 16px,black calc(100% - 16px),transparent);
+    }
+    #sidebar .sidebar-scroll::-webkit-scrollbar{ width:8px }
+    #sidebar .sidebar-scroll::-webkit-scrollbar-thumb{ background:rgba(148,163,184,.35); border-radius:8px }
+    #sidebar .sidebar-scroll:hover::-webkit-scrollbar-thumb{ background:rgba(148,163,184,.55) }
+  
+    .section-title{
+      position:sticky; top:0; z-index:10; padding:.4rem .75rem;
+      border-bottom:1px solid var(--border);
+      color:var(--muted); font-size:12px; letter-spacing:.2px;
+      background:#ffffffcc; backdrop-filter:blur(6px);
+    }
+    #sidebar[data-mini="1"] .section-title{ display:none }
+    #sidebar[data-mini="1"].hovering .section-title,
+    #sidebar.force-open .section-title{ display:block }
+  
+    /* Nav */
+    .nav{ padding:.5rem .25rem .75rem }
+    .nav-link{
+      display:grid; grid-template-columns:var(--sb-mini-w) 1fr auto; align-items:center;
+      min-height:2.5rem; padding-inline:.25rem; border-radius:var(--radius);
+      color:var(--muted); text-decoration:none;
+    }
+    .nav-link:hover{ background:#f2f5ff; color:var(--accent-ink) }
+    .nav-link svg{ grid-column:1; justify-self:center; width:20px; height:20px; opacity:.9 }
+    .nav-label{ grid-column:2; white-space:nowrap; overflow:hidden; transition:opacity .15s, transform .15s, margin .15s }
+    #sidebar[data-mini="1"] .nav-label{ opacity:0; transform:translateX(8px); inline-size:0; margin-inline-start:0 }
+    #sidebar[data-mini="1"].hovering .nav-label,
+    #sidebar.force-open .nav-label{ opacity:1; transform:none; inline-size:auto; margin-inline-start:.5rem }
+  
+    .active-nav{ background:var(--panel-3)!important; color:var(--accent-ink)!important; font-weight:700 }
+  
+    /* Accordion */
+    [data-accordion-trigger]{
+      display:grid; grid-template-columns:var(--sb-mini-w) 1fr auto; align-items:center;
+      min-height:2.5rem; width:100%; border-radius:var(--radius);
+      color:var(--muted); background:transparent; border:none; cursor:pointer; padding:.25rem;
+    }
+    [data-accordion-trigger]:hover{ background:#f2f5ff; color:var(--accent-ink) }
+    [data-chevron]{ transition:transform .2s ease }
+    #sidebar[data-mini="1"] [data-accordion-trigger] .nav-label{ opacity:0; transform:translateX(8px); inline-size:0; margin-inline-start:0 }
+    #sidebar[data-mini="1"] [data-chevron]{ display:none }
+    #sidebar[data-mini="1"].hovering [data-accordion-trigger] .nav-label,
+    #sidebar.force-open [data-accordion-trigger] .nav-label{ opacity:1; transform:none; inline-size:auto; margin-inline-start:.5rem }
+    #sidebar[data-mini="1"].hovering [data-chevron],
+    #sidebar.force-open [data-chevron]{ display:block }
+  
+    [data-accordion-panel].hidden{ display:none!important }
+    [data-accordion-panel]:not(.hidden){ display:block!important }
+    [data-accordion-panel] .nav-link{ margin-inline-start:.75rem }
+  
+    .sb-footer{ border-top:1px solid var(--border); padding:.5rem .25rem }
+  
+    /* Visibility helpers */
+    .mobile-only{ display:inline-flex; }
+    .desktop-only{ display:none; }
+    @media (min-width:1024px){
+      .mobile-only{ display:none; }
+      .desktop-only{ display:inline-flex; }
+    }
+  
+    /* Make desktop toggle prominent */
+    #sidebarDesktopToggle, #sidebarDesktopToggle2{
+      border-color: var(--border);
+      box-shadow: 0 1px 0 rgba(0,0,0,.03);
+    }
+    #sidebarDesktopToggle:hover, #sidebarDesktopToggle2:hover{
+      background:#f6f8ff;
+    }
+  </style>
+  
+  <!-- Topbar -->
+  <header id="sb-topbar">
+    <div class="left-controls">
+      <!-- Desktop: mini toggle -->
+      <button id="sidebarDesktopToggle" class="icon-btn" title="Collapse/Expand sidebar" aria-label="Toggle sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <!-- Mobile: open drawer -->
+      <button id="sidebarOpen" class="icon-btn mobile-only" title="Menu" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+  
+    <div class="brand">
+      <img src="/static/logo.png" alt="Logo" />
+      <div class="name">Monitoring System</div>
+    </div>
+  
+    <div class="right-actions"></div>
+  </header>
+  
+  <!-- Mobile scrim -->
+  <div id="sb-scrim"></div>
+  
+  <!-- Sidebar -->
+  <aside id="sidebar" aria-label="Sidebar">
+    <div class="sb-head">
+      <div class="rail"><img src="/static/logo.png" alt="Logo"></div>
+      <div class="label">Monitoring System</div>
+      <div class="flex items-center gap-2" style="grid-column:3; padding-inline:.25rem;">
+        <!-- Desktop: secondary mini toggle -->
+        <button id="sidebarDesktopToggle2" class="icon-btn desktop-only" title="Collapse/Expand sidebar" aria-label="Toggle sidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+        <!-- Mobile: close -->
+        <button id="sidebarClose" class="icon-btn mobile-only" title="Close" aria-label="Close menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  
+    <!-- Scroll Area -->
+    <div class="sidebar-scroll">
+      <nav class="nav" id="sb-nav">
+        <p class="section-title">Main</p>
+  
+        <a class="nav-link" data-route="/" href="/" title="Dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l9-7 9 7v7a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2v-7z"/></svg>
+          <span class="nav-label">Dashboard</span>
+        </a>
+  
+        <a class="nav-link" data-route="/devices" href="/devices" title="Devices">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3h6a2 2 0 0 1 2 2v3H7V5a2 2 0 0 1 2-2zm10 5v9a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8h14z"/></svg>
+          <span class="nav-label">Devices</span>
+        </a>
+  
+        <a class="nav-link" data-route="/sensors" href="/sensors" title="Sensors">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6"/></svg>
+          <span class="nav-label">Sensors</span>
+        </a>
+  
+        <a class="nav-link" data-route="/alerts" href="/alerts" title="Alerts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M3 12a9 9 0 1 0 18 0A9 9 0 0 0 3 12z"/></svg>
+          <span class="nav-label">Alerts</span>
+        </a>
+  
+        <a class="nav-link" data-route="/predictions" href="/predictions" title="ML Predictions">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 17l6-6 4 4 7-7"/></svg>
+          <span class="nav-label">ML Predictions</span>
+        </a>
+  
+        <a class="nav-link" data-route="/reports" href="/reports" title="Reports">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6h13M9 5v2m0 10v2M3 3h4v18H3z"/></svg>
+          <span class="nav-label">Reports</span>
+        </a>
+  
+        <p class="section-title">Admin</p>
+  
+        <button data-accordion-trigger data-target="#grp-admin" title="Admin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="grid-column:1; justify-self:center; width:20px; height:20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm-7 9a7 7 0 1 1 14 0z"/></svg>
+          <span class="nav-label">Admin</span>
+          <svg data-chevron viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px; height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+        </button>
+  
+        <div id="grp-admin" class="hidden" data-accordion-panel>
+          <a class="nav-link" data-route="/users" href="/users" title="Users">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20a4 4 0 1 0-8 0M12 14a5 5 0 1 0-5-5"/></svg>
+            <span class="nav-label">Users</span>
+          </a>
+          <a class="nav-link" data-route="/settings" href="/settings" title="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317a1 1 0 0 1 .894-.553h1.562a1 1 0 0 1 .894.553l.469.94a1 1 0 0 0 .707.553l1.04.173a1 1 0 0 1 .832.832l.173 1.04a1 1 0 0 0 .553.707l.94.469a1 1 0 0 1 .553.894v1.562a1 1 0 0 1-.553.894l-.94.469a1 1 0 0 0-.553.707l-.173 1.04a1 1 0 0 1-.832.832l-1.04.173a1 1 0 0 0-.707.553z"/></svg>
+            <span class="nav-label">Settings</span>
+          </a>
+        </div>
+      </nav>
+    </div>
+  
+    <!-- Footer -->
+    <div class="sb-footer">
+      <a class="nav-link" href="#" onclick="logout()" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 9V6a3 3 0 0 0-3-3H6.75A3 3 0 0 0 3.75 6v12a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-3M12 9l3 3-3 3M3.75 12H15"/></svg>
+        <span class="nav-label">Logout</span>
+      </a>
+    </div>
+  </aside>
+  
+  <script>
+  (function(){
+    const sb     = document.getElementById('sidebar');
+    const scrim  = document.getElementById('sb-scrim');
+    const openBtn  = document.getElementById('sidebarOpen');        // mobile
+    const closeBtn = document.getElementById('sidebarClose');       // mobile
+    const miniBtn  = document.getElementById('sidebarDesktopToggle'); // desktop topbar
+    const miniBtn2 = document.getElementById('sidebarDesktopToggle2'); // desktop inside sidebar
+  
+    /* Open/close (mobile) */
+    function openMobile(){
+      sb.classList.add('force-open');
+      scrim.classList.add('show');
+      document.body.classList.add('sb-locked');
+    }
+    function closeMobile(){
+      sb.classList.remove('force-open');
+      scrim.classList.remove('show');
+      document.body.classList.remove('sb-locked');
+    }
+    openBtn  && openBtn.addEventListener('click', openMobile);
+    closeBtn && closeBtn.addEventListener('click', closeMobile);
+    scrim    && scrim.addEventListener('click', closeMobile);
+    window.addEventListener('keydown', e => { if(e.key==='Escape') closeMobile(); });
+  
+    /* Desktop mini state (persist) */
+    function setMini(mini){
+      if(mini){ sb.setAttribute('data-mini','1'); localStorage.setItem('sidebarMini','1'); }
+      else     { sb.removeAttribute('data-mini'); localStorage.setItem('sidebarMini','0'); }
+      syncContentMargin();
+    }
+    function getMini(){ return localStorage.getItem('sidebarMini') === '1'; }
+    setMini(getMini());
+  
+    // Wire both desktop toggles
+    function toggleMini(){ setMini(!sb.hasAttribute('data-mini')); }
+    miniBtn  && miniBtn.addEventListener('click', toggleMini);
+    miniBtn2 && miniBtn2.addEventListener('click', toggleMini);
+  
+    // Keyboard shortcut: Ctrl/⌘ + B
+    window.addEventListener('keydown', (e)=>{
+      const mod = e.ctrlKey || e.metaKey;
+      if(mod && (e.key.toLowerCase() === 'b')){
+        if (window.innerWidth >= 1024){
+          toggleMini();
+          e.preventDefault();
+        }
+      }
+    });
+  
+    /* Hover expand when mini (desktop) */
+    sb.addEventListener('pointerenter', ()=>{
+      if (window.innerWidth >= 1024 && sb.hasAttribute('data-mini')) sb.classList.add('hovering');
+    });
+    sb.addEventListener('pointerleave', ()=> sb.classList.remove('hovering'));
+  
+    /* Desktop/mobile sanity + content margin sync */
+    function scrub(){
+      if (window.innerWidth >= 1024) {
+        // desktop: drawer always visible, no scrim/lock
+        sb.classList.remove('force-open');
+        scrim.classList.remove('show');
+        document.body.classList.remove('sb-locked');
+      }
+      syncContentMargin();
+    }
+    window.addEventListener('resize', scrub); scrub();
+  
+    /* Sync page margin with sidebar width + topbar height
+       Use on pages:
+       <main style="margin-inline-start: var(--content-margin); padding-top: var(--topbar-h);">
+    */
+    function syncContentMargin(){
+      const root = document.documentElement;
+      if (window.innerWidth < 1024) {
+        root.style.setProperty('--content-margin', '0px');
+        return;
+      }
+      const mini = sb.hasAttribute('data-mini');
+      root.style.setProperty('--content-margin', mini ? 'var(--sb-mini-w)' : 'var(--sb-open-w)');
+    }
+  
+    /* Accordion */
+    document.querySelectorAll('[data-accordion-trigger]').forEach(btn=>{
+      const panel = document.querySelector(btn.getAttribute('data-target'));
+      const chev  = btn.querySelector('[data-chevron]');
+      btn.addEventListener('click', ()=>{
+        const isHidden = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !isHidden);
+        btn.dataset.open = isHidden ? 'true' : 'false';
+        if (chev) chev.style.transform = isHidden ? 'rotate(180deg)' : '';
+      });
+    });
+  
+    /* Active route highlight */
+    function normalize(p){ try{ p = new URL(p, location.origin).pathname }catch{} return (p||'/').replace(/\/+$/,'') || '/' }
+    const current = (window.SIDEBAR_ACTIVE ? normalize(window.SIDEBAR_ACTIVE) : normalize(location.pathname));
+    const links = document.querySelectorAll('#sb-nav .nav-link');
+    let activeLink = null;
+    links.forEach(a=>{
+      const r = normalize(a.getAttribute('data-route') || '');
+      if (r === current){ a.classList.add('active-nav'); activeLink = a; }
+    });
+    if (activeLink){
+      const panel = activeLink.closest('[data-accordion-panel]');
+      if (panel){
+        panel.classList.remove('hidden');
+        const trigger = document.querySelector(`[data-accordion-trigger][data-target="#${panel.id}"]`);
+        const chev = trigger && trigger.querySelector('[data-chevron]');
+        if (trigger){ trigger.dataset.open='true'; if (chev) chev.style.transform='rotate(180deg)'; }
+      }
+    }
+  
+    /* Stub */
+    window.logout = window.logout || function(){ alert('Logged out (stub)'); };
+  })();
+  </script>
+  

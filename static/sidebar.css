@@ -1,0 +1,84 @@
+:root{
+    --panel-1:#ffffff; --panel-3:#eef3ff;
+    --ink:#0f172a; --muted:#5b6476; --border:#e5e7ef;
+    --accent-ink:#0b3b9e; --radius:12px;
+    --sb-open-w:18rem; --sb-mini-w:4.25rem;
+  }
+  
+  /* Layout helpers you might already have */
+  .translate-x-full{ transform: translateX(-100%); }
+  
+  /* Sidebar shell */
+  #sidebar{
+    width:var(--sb-open-w); height:100vh; display:flex; flex-direction:column;
+    transition:width .2s ease, transform .2s ease; overflow:hidden; will-change:width;
+    background:linear-gradient(180deg,var(--panel-1),#f7f9ff); border-right:1px solid var(--border);
+    position:fixed; inset-block:0; inset-inline-start:0; z-index:50;
+  }
+  @media (min-width:1024px){
+    #sidebar{ transform:none !important; }
+    #sidebar[data-mini="1"]{ width:var(--sb-mini-w); }
+    #sidebar[data-mini="1"].hovering{ width:var(--sb-open-w); }
+  }
+  
+  /* Scroll area */
+  #sidebar .sidebar-scroll{ flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);
+            mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);
+  }
+  #sidebar .sidebar-scroll::-webkit-scrollbar{ width:8px }
+  #sidebar .sidebar-scroll::-webkit-scrollbar-thumb{ background:rgba(148,163,184,.35); border-radius:8px }
+  #sidebar .sidebar-scroll:hover::-webkit-scrollbar-thumb{ background:rgba(148,163,184,.55) }
+  
+  .section-title{ position:sticky; top:0; z-index:10; padding:.4rem .75rem;
+    border-bottom:1px solid var(--border); color:var(--muted); font-size:12px; letter-spacing:.2px;
+    backdrop-filter: blur(6px);
+  }
+  #sidebar[data-mini="1"] .section-title{ display:none }
+  #sidebar[data-mini="1"].hovering .section-title{ display:block }
+  
+  /* Brand */
+  .sb-brand{ display:grid; grid-template-columns:var(--sb-mini-w) 1fr; align-items:center; border-bottom:1px solid var(--border) }
+  .sb-brand .rail{ display:flex; align-items:center; justify-content:center; height:56px }
+  .sb-brand img{ width:28px; height:28px; border-radius:6px }
+  .sb-brand .label{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink); font-weight:800;
+    opacity:1; transform:none; transition:opacity .15s, transform .15s;
+  }
+  #sidebar[data-mini="1"] .sb-brand .label{ opacity:0; transform:translateX(8px) }
+  #sidebar[data-mini="1"].hovering .sb-brand .label{ opacity:1; transform:none }
+  
+  /* Links */
+  .nav{ padding:.5rem .25rem .75rem }
+  .nav-link{
+    display:grid; grid-template-columns:var(--sb-mini-w) 1fr auto; align-items:center;
+    min-height:2.5rem; padding-inline:.25rem; border-radius:var(--radius);
+    color:var(--muted); text-decoration:none;
+  }
+  .nav-link:hover{ background:#f2f5ff; color:var(--accent-ink) }
+  .nav-link svg{ grid-column:1; justify-self:center; width:20px; height:20px; opacity:.9 }
+  .nav-label{ grid-column:2; white-space:nowrap; overflow:hidden; transition: opacity .15s, transform .15s, margin .15s }
+  #sidebar[data-mini="1"] .nav-label{ opacity:0; transform:translateX(8px); inline-size:0; margin-inline-start:0 }
+  #sidebar[data-mini="1"].hovering .nav-label{ opacity:1; transform:none; inline-size:auto; margin-inline-start:.5rem }
+  
+  .active-nav{ background:var(--panel-3) !important; color:var(--accent-ink) !important; font-weight:700 }
+  
+  /* Accordion */
+  [data-accordion-trigger]{
+    display:grid; grid-template-columns:var(--sb-mini-w) 1fr auto; align-items:center;
+    min-height:2.5rem; width:100%; border-radius:var(--radius); color:var(--muted);
+    background:transparent; border:none; cursor:pointer; padding:.25rem;
+  }
+  [data-accordion-trigger]:hover{ background:#f2f5ff; color:var(--accent-ink) }
+  [data-chevron]{ transition: transform .2s ease }
+  #sidebar[data-mini="1"] [data-accordion-trigger] .nav-label{ opacity:0; transform:translateX(8px); inline-size:0; margin-inline-start:0 }
+  #sidebar[data-mini="1"] [data-chevron]{ display:none }
+  #sidebar[data-mini="1"].hovering [data-accordion-trigger] .nav-label{ opacity:1; transform:none; inline-size:auto; margin-inline-start:.5rem }
+  #sidebar[data-mini="1"].hovering [data-chevron]{ display:block }
+  
+  [data-accordion-panel].hidden{ display:none !important }
+  [data-accordion-panel]:not(.hidden){ display:block !important }
+  [data-accordion-panel] .nav-link{ margin-inline-start:.75rem }
+  
+  /* Footer */
+  .sb-footer{ border-top:1px solid var(--border); padding:.5rem .25rem }
+  

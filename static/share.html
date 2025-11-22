@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>نتيجة الكويز - DocsQuiz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tailwind الخاص بالمشروع -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* شوية أنيميشن خفيفة */
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+      100% { transform: translateY(0px); }
+    }
+    @keyframes pulse-soft {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50">
+
+  <!-- خلفية دوائر مزغولة شوية -->
+  <div class="pointer-events-none fixed inset-0 overflow-hidden opacity-40">
+    <div class="absolute -right-10 -top-10 h-72 w-72 rounded-full bg-emerald-500 blur-3xl"></div>
+    <div class="absolute -left-10 bottom-0 h-80 w-80 rounded-full bg-sky-500 blur-3xl"></div>
+  </div>
+
+  <!-- المحتوى الرئيسي -->
+  <div class="relative z-10 flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+    <div class="w-full max-w-5xl space-y-6 rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-7 lg:p-9">
+
+      <!-- هيدر النتيجة -->
+      <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-2 rounded-full bg-black/30 px-3 py-1 text-xs text-slate-200 ring-1 ring-white/10">
+            <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            صفحة نتيجة قابلة للمشاركة
+          </div>
+          <h1 class="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+            نتيجة الكويز على
+            <span class="bg-gradient-to-l from-emerald-400 to-sky-300 bg-clip-text text-transparent">
+              DocsQuiz
+            </span>
+          </h1>
+          <p class="text-sm text-slate-300">
+            هنا تقدر تراجع أداءك، وتشوف فين أخطأت بالظبط، وتبعت الصفحة دي لأي حد 👀
+          </p>
+        </div>
+
+        <!-- CTA يجرب الكويز -->
+        <div class="flex flex-col items-stretch gap-2 sm:items-end">
+          <a
+            href="/"
+            class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-500 to-sky-400 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-900/40 transition hover:brightness-110"
+          >
+            جرّب كويز بنفسك الآن
+            <span class="text-lg">🚀</span>
+          </a>
+          <span class="text-[11px] text-slate-300">
+            مبني على توثيق حقيقي · أسئلة ديناميكية لكل محاولة
+          </span>
+        </div>
+      </header>
+
+      <!-- منطقة النتيجة / اللودينج -->
+      <main id="resultArea" class="space-y-6">
+        <!-- لودينج مبدئي -->
+        <div class="flex flex-col items-center justify-center py-16">
+          <div class="h-16 w-16 animate-spin rounded-full border-2 border-slate-600 border-t-emerald-400 mb-4"></div>
+          <p class="text-sm text-slate-300 animate-[pulse-soft_1.6s_ease-in-out_infinite]">
+            بنجيب نتيجتك من السيرفر... استنى ثانية بس 👀
+          </p>
+        </div>
+      </main>
+
+      <!-- فوتر -->
+      <footer class="mt-4 border-t border-white/10 pt-4 text-xs text-slate-400 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p>
+          هذه الصفحة جزء من منصة
+          <span class="font-semibold text-emerald-300">
+            DocsQuiz
+          </span>
+          لمراجعة التوثيق البرمجي بالمحتوى العربي.
+        </p>
+        <p class="text-[11px] text-slate-500">
+          جرّب أكثر من كويز، وشارك نتيجتك مع أصحابك وزملائك في المجال 👨‍💻👩‍💻
+        </p>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // ---- Helpers بسيطة ----
+    function esc(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function formatQuestionText(text) {
+      // نحافظ على الأسطر، ونعقم النص
+      const safe = esc(text || "");
+      // لو السؤال فيه ``` نعرضه كـ pre block
+      if (safe.includes("```")) {
+        // محاولة بسيطة لاستخراج الكود
+        return safe
+          .replace(/```([a-zA-Z0-9_+-]*)/g, "<br><pre class='mt-2 mb-1 rounded-xl bg-slate-900/80 text-[11px] leading-relaxed text-emerald-100 px-3 py-2 overflow-x-auto'><code>")
+          .replace(/```/g, "</code></pre>");
+      }
+      return safe.replace(/\n/g, "<br>");
+    }
+
+    function formatDate(iso) {
+      if (!iso) return "";
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString("ar-EG", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      } catch {
+        return "";
+      }
+    }
+
+    async function loadSharedResult() {
+      const shareId = window.location.pathname.split("/").pop();
+      const resultArea = document.getElementById("resultArea");
+
+      try {
+        const res = await fetch(`/api/shared/${shareId}`);
+        if (!res.ok) throw new Error("not found");
+        const data = await res.json();
+        renderSharedResult(data);
+      } catch (err) {
+        console.error(err);
+        resultArea.innerHTML = `
+          <div class="rounded-2xl border border-rose-500/40 bg-rose-950/40 px-4 py-6 text-center text-sm text-rose-100 shadow-lg shadow-black/40">
+            <div class="mb-2 text-lg">⚠️</div>
+            <p>عذرًا، النتيجة غير موجودة أو انتهت صلاحيتها.</p>
+            <p class="mt-2 text-xs text-rose-200">
+              جرّب أن تطلب من صاحب الرابط يولّد نتيجة جديدة، أو ابدأ كويز جديد بنفسك من الصفحة الرئيسية.
+            </p>
+            <a href="/" class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-slate-50 hover:bg-white/20">
+              العودة للصفحة الرئيسية
+            </a>
+          </div>
+        `;
+      }
+    }
+
+    function renderSharedResult(data) {
+      const area = document.getElementById("resultArea");
+      const score = data.score ?? 0;
+      const total = data.total ?? 0;
+      const pct = total ? Math.round((score / total) * 100) : 0;
+      const level = data.level || "غير محدد";
+      const topics = data.topics || [];
+      const perTopic = data.per_topic || [];
+      const wrong = data.wrong_questions || [];
+      const createdAt = formatDate(data.created_at);
+
+      const moodEmoji =
+        pct >= 90 ? "🔥" :
+        pct >= 75 ? "🚀" :
+        pct >= 50 ? "💪" :
+        pct > 0  ? "🧠" : "📚";
+
+      const moodLabel =
+        pct >= 90 ? "أسطوري" :
+        pct >= 75 ? "ممتاز" :
+        pct >= 50 ? "جيد ويمكنك التحسين" :
+        pct > 0  ? "بداية قوية" : "جاهز لأول تجربة";
+
+      const moodColor =
+        pct >= 75 ? "from-emerald-400 to-sky-300" :
+        pct >= 50 ? "from-amber-400 to-rose-300" :
+        pct > 0  ? "from-rose-400 to-amber-300" :
+                   "from-slate-400 to-slate-200";
+
+      area.innerHTML = `
+        <!-- صف الملخص الأعلى: سكــور + الأداء حسب الموضوع -->
+        <section class="grid gap-4 lg:grid-cols-[1.15fr,1fr]">
+          <!-- كارت النتيجة الرئيسية -->
+          <div class="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/90 via-slate-900/80 to-slate-900/70 p-5 shadow-xl">
+            <div class="pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl"></div>
+            <div class="pointer-events-none absolute -right-10 -bottom-10 h-52 w-52 rounded-full bg-sky-400/20 blur-3xl"></div>
+
+            <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <!-- الدرجـة -->
+              <div class="flex items-center gap-4">
+                <div class="relative h-20 w-20 flex-shrink-0">
+                  <div class="absolute inset-0 rounded-full bg-slate-800/80 shadow-inner shadow-black/60"></div>
+                  <div
+                    class="absolute inset-[3px] rounded-full bg-slate-900 flex items-center justify-center"
+                    style="animation: float 3s ease-in-out infinite;"
+                  >
+                    <span class="text-2xl font-extrabold text-emerald-300">${pct}%</span>
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <div class="inline-flex items-center gap-2 rounded-full bg-black/30 px-2.5 py-1 text-[11px] text-slate-200 ring-1 ring-white/10">
+                    <span class="text-base">${moodEmoji}</span>
+                    <span>${moodLabel}</span>
+                  </div>
+                  <p class="text-sm text-slate-100">
+                    جاوبت صح
+                    <span class="font-semibold text-emerald-300">${score}</span>
+                    من
+                    <span class="font-semibold text-slate-50">${total}</span>
+                    سؤال.
+                  </p>
+                  ${createdAt ? `<p class="text-[11px] text-slate-400">تاريخ المحاولة: ${createdAt}</p>` : ""}
+                </div>
+              </div>
+
+              <!-- تفاصيل بسيطة -->
+              <div class="space-y-2 text-xs text-slate-200">
+                <div>
+                  <span class="text-slate-400">المستوى:</span>
+                  <span class="ms-1 rounded-full bg-white/5 px-2 py-1 text-[11px]">${esc(level)}</span>
+                </div>
+                <div>
+                  <span class="text-slate-400">عدد الموضوعات:</span>
+                  <span class="ms-1 text-slate-100">${topics.length || "غير متوفر"}</span>
+                </div>
+                ${
+                  topics.length
+                    ? `<div class="mt-1 flex flex-wrap gap-1.5">
+                        ${topics.map(t => `
+                          <span class="rounded-full bg-white/5 px-2 py-1 text-[11px] text-slate-100 border border-white/10">
+                            ${esc(t)}
+                          </span>
+                        `).join("")}
+                      </div>`
+                    : ""
+                }
+              </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="relative mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-800/80">
+              <div class="h-full w-full bg-gradient-to-l ${moodColor} origin-right scale-x-[${pct / 100}]"
+                   style="transform-origin:right; transform:scaleX(${pct / 100}); transition: transform 0.8s ease-out;">
+              </div>
+            </div>
+
+            <p class="mt-3 text-[11px] text-slate-300">
+              كل كويز في DocsQuiz مبني من التوثيق مباشرة – يعني النتيجة دي بتقيس فهمك الحقيقي مش حفظ أسئلة 👌
+            </p>
+          </div>
+
+          <!-- الأداء حسب الموضوع -->
+          <div class="rounded-3xl border border-white/10 bg-slate-900/80 p-4 shadow-lg shadow-black/50">
+            <h2 class="mb-2 text-sm font-semibold text-slate-50">الأداء حسب الموضوع</h2>
+            <div class="max-h-52 space-y-2 overflow-auto pr-1">
+              ${
+                perTopic.length
+                  ? perTopic.map(t => {
+                      const tpct = t.total ? Math.round((t.correct / t.total) * 100) : 0;
+                      const weak = tpct < 70;
+                      return `
+                        <div class="rounded-2xl bg-black/30 px-3 py-2.5 border border-white/5">
+                          <div class="mb-1 flex items-center justify-between gap-2">
+                            <span class="text-xs font-medium text-slate-50">${esc(t.topic)}</span>
+                            <span class="text-[11px] ${
+                              weak ? "text-amber-300" : "text-emerald-300"
+                            }">
+                              ${tpct}% · ${t.correct}/${t.total}
+                            </span>
+                          </div>
+                          <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+                            <div class="h-full rounded-full ${
+                              weak ? "bg-gradient-to-l from-amber-400 to-rose-400" : "bg-gradient-to-l from-emerald-400 to-sky-400"
+                            }" style="width:${tpct}%;"></div>
+                          </div>
+                        </div>
+                      `;
+                    }).join("")
+                  : `<p class="text-xs text-slate-400">لا توجد بيانات كافية لعرض الأداء حسب الموضوع.</p>`
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- الأسئلة الخاطئة -->
+        <section class="mt-4 space-y-3">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-sm font-semibold text-slate-50">
+                ${wrong.length ? "الأسئلة التي أجبت عليها بشكل خاطئ" : "لا توجد أسئلة خاطئة 🎉 أحسنت!"}
+              </h2>
+              <p class="text-[11px] text-slate-400">
+                راجع الأسئلة دي، وادخل كويز جديد بنفس الموضوعات أو مواضيع أعمق.
+              </p>
+            </div>
+            ${
+              wrong.length
+                ? `<span class="inline-flex items-center gap-1 rounded-full bg-black/30 px-3 py-1 text-[11px] text-amber-200 border border-amber-500/30">
+                     عدد الأسئلة التي تحتاج مراجعة: ${wrong.length}
+                   </span>`
+                : ""
+            }
+          </div>
+
+          ${
+            wrong.length
+              ? `<div class="grid gap-3 md:grid-cols-2">
+                  ${wrong.map((w, idx) => {
+                    const q = w.question || {};
+                    const topic = q.topic || "غير محدد";
+                    const qHtml = formatQuestionText(q.question || "");
+                    const opts = q.options || [];
+                    const userOpt = (typeof w.user_index === "number" && w.user_index >= 0) ? opts[w.user_index] : null;
+                    const correctOpt = (typeof w.correct_index === "number") ? opts[w.correct_index] : null;
+                    const expl = q.explanation || "";
+
+                    return `
+                      <article class="relative flex flex-col rounded-3xl border border-white/10 bg-slate-950/70 p-4 shadow-lg shadow-black/50">
+                        <div class="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-[11px] font-bold text-white shadow-md shadow-rose-900/60">
+                          ${idx + 1}
+                        </div>
+                        <header class="mb-2 flex flex-wrap items-center justify-between gap-1">
+                          <span class="rounded-full bg-white/5 px-2 py-1 text-[11px] text-slate-100 border border-white/10">
+                            موضوع: ${esc(topic)}
+                          </span>
+                          <span class="rounded-full bg-rose-500/10 px-2 py-1 text-[11px] text-rose-200 border border-rose-500/40">
+                            سؤال يحتاج مراجعة
+                          </span>
+                        </header>
+
+                        <div class="mb-3 text-xs leading-relaxed text-slate-100">
+                          ${qHtml}
+                        </div>
+
+                        <div class="mt-auto space-y-1 rounded-2xl bg-white/5 p-3 text-[11px]">
+                          <div>
+                            <span class="font-semibold text-slate-100">إجابتك:</span>
+                            <span class="ms-1 ${userOpt ? "text-rose-200" : "text-slate-400"}">
+                              ${userOpt ? esc(userOpt) : "لم يتم اختيار إجابة"}
+                            </span>
+                          </div>
+                          <div>
+                            <span class="font-semibold text-emerald-200">الإجابة الصحيحة:</span>
+                            <span class="ms-1 text-emerald-100">
+                              ${correctOpt ? esc(correctOpt) : "غير متوفرة"}
+                            </span>
+                          </div>
+                        </div>
+
+                        ${
+                          expl
+                            ? `<div class="mt-2 rounded-2xl bg-amber-500/10 p-3 text-[11px] text-amber-100 border border-amber-400/40">
+                                <span class="font-semibold text-amber-200">تفسير:</span>
+                                <span class="ms-1">${esc(expl)}</span>
+                               </div>`
+                            : ""
+                        }
+                      </article>
+                    `;
+                  }).join("")}
+                </div>`
+              : `<div class="rounded-3xl border border-emerald-500/30 bg-emerald-950/40 px-4 py-6 text-sm text-emerald-100 shadow-lg shadow-black/40">
+                  ما شاء الله 🔥، واضح إنك فاهم المحتوى ده كويس جدًا.
+                  <br class="hidden sm:block">
+                  جرّب كويز جديد في موضوع مختلف أو مستوى أصعب وخد لقطة شاشة بالنتيجة الجديدة وشاركها 😎
+                </div>`
+          }
+        </section>
+
+        <!-- CTA أخير لتجربة الكويز -->
+        <section class="mt-4 rounded-3xl border border-white/10 bg-slate-950/70 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="space-y-1">
+            <h2 class="text-sm font-semibold text-slate-50">عاوز تجرب كويز بنفسك؟</h2>
+            <p class="text-[11px] text-slate-400">
+              ادخل على DocsQuiz، اختار لغة/موضوع، وخلي المنصة تولّد لك أسئلة من التوثيق مباشرة.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <a
+              href="/"
+              class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-500 to-sky-400 px-4 py-2 text-xs font-semibold text-slate-950 shadow-lg shadow-emerald-900/50 hover:brightness-110"
+            >
+              ابدأ كويز جديد الآن
+              <span>✨</span>
+            </a>
+            <span class="text-[11px] text-slate-400">
+              لا تحتاج تسجيل · مجاني · مخصص للمبرمج العربي
+            </span>
+          </div>
+        </section>
+      `;
+    }
+
+    loadSharedResult();
+  </script>
+</body>
+</html>

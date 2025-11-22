@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Alerts — PLC Monitoring</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="/static/logo.png">
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#0f172a',
+            muted: '#6b7280',
+            border: '#e5e7eb',
+            accent: '#2563eb',
+          },
+          boxShadow: {
+            soft: '0 24px 60px -28px rgba(15,23,42,.25)'
+          },
+          borderRadius: {
+            xl2: '18px'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Align with sidebar partial -->
+  <style>
+    :root{ --sb-open-w: 18rem; --sb-mini-w: 4.25rem; }
+    @media (min-width:1024px){
+      html body main[data-with-sidebar="1"]{ margin-inline-start: var(--sb-open-w); }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-[radial-gradient(1200px_800px_at_10%_-10%,#eef3ff_0%,#f7f8fb_40%,#f7f8fb_100%)] text-ink selection:bg-accent/15 selection:text-ink">
+
+  {% include "sidebar.html" %}
+
+  <main class="p-6" style="margin-inline-start: var(--content-margin); padding-top: var(--topbar-h);" data-with-sidebar="1">
+    <!-- Header -->
+    <section class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">Alerts</h1>
+        <p class="text-muted text-sm">Monitor and acknowledge system alerts</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="btnRefresh" class="rounded-xl border border-border bg-white px-4 py-2.5 font-medium hover:bg-gray-50 active:translate-y-px">
+          Refresh
+        </button>
+      </div>
+    </section>
+
+    <!-- KPI Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="rounded-2xl border border-border bg-white/80 backdrop-blur shadow-soft p-4">
+        <div class="text-sm text-muted">Total Alerts</div>
+        <div id="kpi_total" class="mt-1 text-3xl font-bold tracking-tight">—</div>
+        <div class="mt-2 text-xs text-muted" id="kpi_total_hint">Last sync now</div>
+      </div>
+      <div class="rounded-2xl border border-border bg-white/80 backdrop-blur shadow-soft p-4">
+        <div class="text-sm text-muted">Unacknowledged</div>
+        <div id="kpi_unack" class="mt-1 text-3xl font-bold tracking-tight">—</div>
+        <div class="mt-2 text-xs text-muted">By current page</div>
+      </div>
+      <div class="rounded-2xl border border-border bg-white/80 backdrop-blur shadow-soft p-4">
+        <div class="text-sm text-muted">Critical (24h)</div>
+        <div id="kpi_critical" class="mt-1 text-3xl font-bold tracking-tight">—</div>
+        <div class="mt-2 text-xs text-muted">Estimate by current page</div>
+      </div>
+      <div class="rounded-2xl border border-border bg-white/80 backdrop-blur shadow-soft p-4">
+        <div class="text-sm text-muted">Sensors Involved</div>
+        <div id="kpi_sensors" class="mt-1 text-3xl font-bold tracking-tight">—</div>
+        <div class="mt-2 text-xs text-muted">By current page</div>
+      </div>
+    </section>
+
+    <!-- Card: Filters + Table -->
+    <section class="rounded-2xl border border-border bg-white/80 backdrop-blur shadow-soft overflow-hidden">
+      <!-- Filters -->
+       
+      <div class="px-5 py-4 border-b border-border">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-muted mb-1">Sensor</label>
+            <select id="f_sensor" class="w-full rounded-xl border border-border px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+              <option value="">All sensors</option>
+            </select>
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-muted mb-1">Level</label>
+            <select id="f_level" class="w-full rounded-xl border border-border px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+              <option value="">Any</option>
+              <option value="INFO">INFO</option>
+              <option value="WARNING">WARNING</option>
+              <option value="CRITICAL">CRITICAL</option>
+            </select>
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-muted mb-1">Type</label>
+            <input id="f_type" type="text" placeholder="rule/threshold/flatline…" class="w-full rounded-xl border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-muted mb-1">Message</label>
+            <input id="f_message" type="text" placeholder="contains…" class="w-full rounded-xl border border-border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-muted mb-1">Acknowledged</label>
+            <select id="f_ack" class="w-full rounded-xl border border-border px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+              <option value="">All</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-muted mb-1">Sent To (users)</label>
+            <select id="f_sent_to" multiple size="1" class="w-full rounded-xl border border-border px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40 min-h-[42px]"></select>
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-muted mb-1">From</label>
+            <input id="f_from" type="datetime-local" class="w-full rounded-xl border border-border px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+            </div>
+            <!-- To datetime -->
+            <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-muted mb-1">To</label>
+            <input id="f_to" type="datetime-local" class="w-full rounded-xl border border-border px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+            </div>
+          <div class="lg:col-span-12 flex items-end gap-2">
+            <button id="btnSearch" class="rounded-xl border border-border bg-white px-4 py-2.5 font-medium hover:bg-gray-50 active:translate-y-px">Search</button>
+            <button id="btnReset" class="rounded-xl border border-border bg-white px-4 py-2.5 font-medium hover:bg-gray-50 active:translate-y-px">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table id="tbl" class="min-w-full text-sm">
+          <thead class="sticky top-0 z-10 bg-white backdrop-blur text-gray-700 border-y border-border">
+            <tr>
+              <th class="text-left px-5 py-3 w-16">ID</th>
+              <th class="text-left px-5 py-3 w-48">Time</th>
+              <th class="text-left px-5 py-3 w-40">Sensor</th>
+              <th class="text-left px-5 py-3 w-28">Level</th>
+              <th class="text-left px-5 py-3 w-36">Type</th>
+              <th class="text-left px-5 py-3">Message</th>
+              <th class="text-left px-5 py-3 w-40">Sent To</th>
+              <th class="text-left px-5 py-3 w-32">Ack</th>
+              <th class="text-left px-5 py-3 w-24">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border"></tbody>
+        </table>
+
+        <!-- Skeleton -->
+        <div id="skeleton" class="p-5 space-y-3 hidden">
+          <div class="h-10 rounded-xl bg-gray-100 animate-pulse"></div>
+          <div class="h-10 rounded-xl bg-gray-100 animate-pulse"></div>
+          <div class="h-10 rounded-xl bg-gray-100 animate-pulse"></div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="emptyState" class="hidden p-12 text-center">
+          <div class="mx-auto w-14 h-14 rounded-2xl bg-accent/10 text-accent grid place-items-center mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M12 6v12m6-6H6"/></svg>
+          </div>
+          <h3 class="text-lg font-semibold">No alerts found</h3>
+          <p class="text-muted mt-1">Try adjusting filters.</p>
+        </div>
+      </div>
+
+      <!-- Pager -->
+      <div class="px-5 py-4 border-t border-border flex flex-wrap items-center justify-between gap-3">
+        <span id="pgInfo" class="text-muted">Page —</span>
+        <div class="flex items-center gap-2">
+          <button id="pgPrev" class="rounded-xl border border-border bg-white px-3 py-2 hover:bg-gray-50 disabled:opacity-50">Prev</button>
+          <input id="pgInput" type="text" value="1" class="w-16 text-center rounded-xl border border-border px-2 py-2 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40" />
+          <button id="pgNext" class="rounded-xl border border-border bg-white px-3 py-2 hover:bg-gray-50 disabled:opacity-50">Next</button>
+          <select id="pgSize" class="rounded-xl border border-border px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/40">
+            <option>10</option><option>25</option><option>50</option><option>100</option><option>200</option>
+          </select>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 z-[60] hidden">
+    <div class="rounded-xl bg-gray-900 text-white px-4 py-3 shadow-2xl/50 shadow-xl text-sm" id="toastMsg">Saved</div>
+  </div>
+
+  <!-- View Modal -->
+
+  <div id="viewDlg" class="fixed inset-0 z-[70] hidden grid place-items-center bg-black/30 p-4">
+
+    <div class="w-full max-w-2xl rounded-2xl border border-border bg-white shadow-soft overflow-hidden">
+
+      <div class="flex items-center justify-between px-5 py-4 border-b border-border">
+
+        <span class="font-semibold">Alert details</span>
+
+        <button id="viewClose" class="rounded-lg px-2 py-1.5 hover:bg-gray-100">✕</button>
+
+      </div>
+
+      <div class="px-5 py-4 space-y-2 text-sm" id="viewBody"></div>
+
+    </div>
+
+  </div>
+
+  <script>
+    /* ============= CONFIG ============= */
+    const API_BASE = "";
+    const EP_ALERT_LIST = "/api/v1/alerts";    // GET paginated alerts (with filters)
+    const EP_ALERT_ACK  = "/api/v1/alerts";    // PUT acknowledge
+    const EP_SENSOR_LIST = "/api/v1/sensor";   // for sensor filter label
+    const EP_USER_LIST   = "/api/v1/user";     // for sent_to filter (assumed)
+
+    /* ============= STATE ============= */
+    const state = {
+      page: 1, per_page: 10, total: 0,
+      items: [],
+      sensors: [],
+      users: [],
+      filters: { sensor_id:"", level:"", type:"", message:"", acknowledged:"", sent_to:[] , created_from:"", created_to:"" },
+      loading: false,
+    };
+
+    /* ============= HELPERS ============= */
+    const $ = s => document.querySelector(s);
+    const $from = document.getElementById('f_from');
+    const $to   = document.getElementById('f_to');
+
+    $from.addEventListener('change', () => {
+    $to.min = $from.value || '';
+    });
+
+    $to.addEventListener('change', () => {
+    $from.max = $to.value || '';
+    });
+    function showToast(msg){
+      const el = $("#toast");
+      $("#toastMsg").textContent = msg;
+      el.classList.remove("hidden");
+      clearTimeout(el._t); el._t = setTimeout(()=> el.classList.add("hidden"), 1800);
+    }
+
+    function qsAppend(url, params){
+      const usp = new URLSearchParams();
+      Object.entries(params).forEach(([k,v])=>{
+        if (v === undefined || v === null) return;
+        if (Array.isArray(v)){
+          v.filter(x => String(x).trim() !== "").forEach(val => usp.append(k, val));
+        } else if (String(v).trim() !== "") {
+          usp.append(k, v);
+        }
+      });
+      const qs = usp.toString();
+
+      return url + (qs ? (url.includes('?')? '&' : '?') + qs : '');
+
+    }
+
+    function dtLocalToISO(v){
+      if(!v) return '';
+      const d = new Date(v);
+      return isNaN(d.getTime()) ? '' : d.toISOString();
+    }
+
+    function fmtDate(s){
+      if(!s) return '—';
+      try{ return new Date(s).toLocaleString(); }catch{ return s; }
+    }
+
+    function levelBadge(level){
+      const L = String(level||'').toUpperCase();
+      if(L === 'CRITICAL') return '<span class="inline-flex items-center rounded-full border border-red-200 bg-red-50 text-red-700 px-2.5 py-1 text-xs font-semibold">CRITICAL</span>';
+      if(L === 'WARNING')  return '<span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 px-2.5 py-1 text-xs font-semibold">WARNING</span>';
+      if(L === 'INFO')     return '<span class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 text-blue-700 px-2.5 py-1 text-xs font-semibold">INFO</span>';
+      return `<span class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 text-gray-700 px-2.5 py-1 text-xs font-semibold">${level||'—'}</span>`;
+    }
+
+    function escapeHtml(s){
+      return String(s==null? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#039;'}[m]));
+    }
+
+    function currentPageStats(){
+      const total = state.total ?? state.items.length;
+      const unack = state.items.filter(a => !a.acknowledged).length;
+      const critical24 = state.items.filter(a => String(a.level).toUpperCase()==='CRITICAL' && Date.now()-new Date(a.created_at||a.ts||Date.now()) < 24*3600*1000).length;
+      const sensorsInvolved = new Set(state.items.map(a=> a.sensor_id).filter(Boolean)).size;
+      $("#kpi_total").textContent = total;
+      $("#kpi_unack").textContent = unack;
+      $("#kpi_critical").textContent = critical24;
+      $("#kpi_sensors").textContent = sensorsInvolved;
+      $("#kpi_total_hint").textContent = "Last sync: " + new Date().toLocaleTimeString();
+    }
+
+    /* ============= API ============= */
+    async function fetchSensors(){
+      const res = await fetch(qsAppend(API_BASE + EP_SENSOR_LIST, { page:1, per_page:1000 }), { cache:'no-store' });
+      if(!res.ok) throw new Error('Sensors fetch failed: '+res.status);
+      const data = await res.json();
+      state.sensors = data.items || [];
+      // Fill filter
+      const sel = document.getElementById('f_sensor');
+      const keep = sel.value;
+      sel.innerHTML = '<option value="">All sensors</option>' + state.sensors.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name || ('#'+s.id))}</option>`).join('');
+      if(keep) sel.value = keep;
+    }
+
+    async function fetchUsers(){
+      const res = await fetch(qsAppend(API_BASE + EP_USER_LIST, { page:1, per_page:1000 }), { cache:'no-store' });
+      if(!res.ok) throw new Error('Users fetch failed: '+res.status);
+      const data = await res.json();
+      state.users = data.items || [];
+      const sel = document.getElementById('f_sent_to');
+      const selected = new Set(state.filters.sent_to.map(String));
+      sel.innerHTML = state.users.map(u => `<option value="${escapeHtml(u.id)}" ${selected.has(String(u.id))? 'selected':''}>${escapeHtml(u.full_name || u.name || u.email || ('User '+u.id))}</option>`).join('');
+    }
+
+    async function fetchAlerts(){
+    const savedY = document.scrollingElement?.scrollTop || 0;
+    state.loading = true; toggleSkeleton(true);
+    const ackSel = state.filters.acknowledged;
+    const ackParam = ackSel === '' ? undefined : (ackSel === 'true' ? true : false);
+    const params = {
+    page: state.page, per_page: state.per_page,
+    sensor_id: state.filters.sensor_id || undefined,
+    type: state.filters.type || undefined,
+    level: state.filters.level || undefined,
+    message: state.filters.message || undefined,
+    created_from: state.filters.created_from || undefined,
+    created_to: state.filters.created_to || undefined,
+    acknowledged: ackParam,
+    sent_to: state.filters.sent_to.length? state.filters.sent_to: undefined,};
+      
+      let url = API_BASE + EP_ALERT_LIST;
+      url = qsAppend(url, params);
+      const res = await fetch(url, { cache:'no-store' });
+      if(!res.ok){ state.loading=false; toggleSkeleton(false); throw new Error('Alerts fetch failed: '+res.status); }
+      const data = await res.json();
+      state.items = data.items || [];
+      state.total = data.total ?? state.items.length;
+      state.page = data.page || state.page;
+      state.per_page = data.per_page || state.per_page;
+      state.loading=false; toggleSkeleton(false);
+      renderTable();
+      renderPager();
+      currentPageStats();
+      document.getElementById('emptyState').classList.toggle('hidden', state.items.length>0);
+      if (document.scrollingElement) document.scrollingElement.scrollTop = savedY;
+     
+
+};
+
+function openViewModal(a){
+        const dlg = document.getElementById('viewDlg');
+        const body = document.getElementById('viewBody');
+        if(!a){ body.innerHTML = '<div class="text-muted">No data</div>'; }
+        else {
+        body.innerHTML = `
+        <div><span class="text-muted">ID:</span> <strong>${a.id??'—'}</strong></div>
+        <div><span class="text-muted">Time:</span> ${escapeHtml(fmtDate(a.created_at||a.ts))}</div>
+        <div><span class="text-muted">Sensor:</span> ${escapeHtml(sensorNameById(a.sensor_id))}</div>
+        <div><span class="text-muted">Level:</span> ${levelBadge(a.level)}</div>
+        <div><span class="text-muted">Type:</span> ${escapeHtml(a.type||'—')}</div>
+        <div><span class="text-muted">Message:</span> ${escapeHtml(a.message||'')}</div>
+        <div><span class="text-muted">Sent To:</span> ${escapeHtml((Array.isArray(a.sent_to)? a.sent_to.map(userNameById): [a.sent_to]).filter(Boolean).join(', ')||'—')}</div>
+        <div><span class="text-muted">Acknowledged:</span> ${a.acknowledged? 'Yes':'No'}</div>
+        `;
+        }
+        dlg.classList.remove('hidden');
+        dlg.classList.add('grid');
+        }
+
+
+        function closeViewModal(){
+        const dlg = document.getElementById('viewDlg');
+        dlg.classList.add('hidden');
+        dlg.classList.remove('grid');
+        }
+
+    async function setAcknowledged(alert_id, acknowledged){
+      const url = qsAppend(API_BASE + EP_ALERT_ACK, { alert_id, acknowledged });
+      const res = await fetch(url, { method:'PUT' });
+      if(!res.ok) throw new Error('Acknowledge failed: '+res.status);
+      return res.json();
+    }
+
+    /* ============= RENDER ============= */
+    function toggleSkeleton(on){
+      document.getElementById('skeleton').classList.toggle('hidden', !on);
+      if(on) document.querySelector('#tbl tbody').innerHTML = '';
+    }
+
+    function sensorNameById(id){
+      const row = (state.sensors||[]).find(s => String(s.id) === String(id));
+      return row?.name || (id ?? '—');
+    }
+
+    function userNameById(id){
+      const row = (state.users||[]).find(u => String(u.id) === String(id));
+      return row?.full_name || row?.name || row?.email || id || '—';
+    }
+
+    function renderTable(){
+      const tb = document.querySelector('#tbl tbody');
+      tb.innerHTML = '';
+      for(const a of state.items){
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-[#fafcff]/80';
+        const sentArray = Array.isArray(a.sent_to)? a.sent_to : (a.sent_to!=null? [a.sent_to]: []);
+        const sentHuman = sentArray.map(userNameById).join(', ');
+        tr.innerHTML = `
+          <td class="px-5 py-3 text-gray-700">${a.id ?? '—'}</td>
+          <td class="px-5 py-3">${fmtDate(a.created_at || a.ts)}</td>
+          <td class="px-5 py-3">${escapeHtml(sensorNameById(a.sensor_id))}</td>
+          <td class="px-5 py-3">${levelBadge(a.level)}</td>
+          <td class="px-5 py-3">${escapeHtml(a.type || '—')}</td>
+          <td class="px-5 py-3">${escapeHtml(a.message || '')}</td>
+          <td class="px-5 py-3">${escapeHtml(sentHuman || '—')}</td>
+          <td class="px-5 py-3">
+            <label class="inline-flex items-center gap-2">
+              <input type="checkbox" data-ack-id="${a.id}" ${a.acknowledged? 'checked':''} class="h-4 w-4 rounded border-border">
+              <span class="text-xs ${a.acknowledged? 'text-green-700':'text-amber-700'}">${a.acknowledged? 'ACKED':'UN-ACK'}</span>
+            </label>
+          </td>
+          <td class="px-5 py-3">
+            <button data-act="view" data-id="${a.id}" class="rounded-lg border border-border bg-white px-3 py-1.5 hover:bg-gray-50">View</button>
+          </td>`;
+        tb.appendChild(tr);
+      }
+
+      // Ack toggles
+      tb.querySelectorAll('input[type="checkbox"][data-ack-id]').forEach(chk => {
+        chk.addEventListener('change', async () => {
+          const id = chk.getAttribute('data-ack-id');
+          const val = chk.checked;
+          const revert = !val;
+          try{
+            await setAcknowledged(id, val);
+            showToast(val? 'Alert acknowledged' : 'Alert un-acknowledged');
+            fetchAlerts().catch(()=>{});
+          }catch(e){
+            chk.checked = revert;
+            showToast(e.message || 'Failed to update');
+          }
+        });
+      });
+    }
+
+    function renderPager(){
+      const totalPages = Math.max(1, Math.ceil((state.total||0) / state.per_page));
+      document.getElementById('pgInfo').textContent = `Page ${state.page} / ${totalPages} — ${state.total} items`;
+      document.getElementById('pgInput').value = state.page;
+      document.getElementById('pgPrev').disabled = state.page <= 1;
+      document.getElementById('pgNext').disabled = state.page >= totalPages;
+    }
+
+    /* ============= EVENTS ============= */
+    document.getElementById('btnRefresh').addEventListener('click', (e)=> { e.preventDefault(); fetchAlerts().catch(err=>showToast(err.message)); });
+
+    document.getElementById('btnSearch').addEventListener('click', (e)=>{
+  e.preventDefault();
+
+  // read filters
+  state.filters.sensor_id = document.getElementById('f_sensor').value.trim();
+  state.filters.level      = document.getElementById('f_level').value.trim();
+  state.filters.type       = document.getElementById('f_type').value.trim();
+  state.filters.message    = document.getElementById('f_message').value.trim();
+  state.filters.acknowledged = document.getElementById('f_ack').value.trim();
+
+  // multi select (sent_to)
+  const multi = document.getElementById('f_sent_to');
+  state.filters.sent_to = Array.from(multi.selectedOptions).map(o=>o.value);
+
+  // from/to datetime
+  const fromRaw = document.getElementById('f_from').value;
+  const toRaw   = document.getElementById('f_to').value;
+
+  const fromISO = dtLocalToISO(fromRaw);
+  const toISO   = dtLocalToISO(toRaw);
+
+  // basic validation: if both present, ensure to >= from
+  if (fromISO && toISO && new Date(toISO) < new Date(fromISO)) {
+    showToast('“To” must be after “From”.');
+    return;
+  }
+
+  state.filters.created_from = fromISO;
+  state.filters.created_to   = toISO;
+
+  state.page = 1;
+  fetchAlerts().catch(err=>showToast(err.message));
+});
+
+
+document.getElementById('btnReset').addEventListener('click', (e)=>{
+  e.preventDefault();
+
+  document.getElementById('f_sensor').value  = '';
+  document.getElementById('f_level').value   = '';
+  document.getElementById('f_type').value    = '';
+  document.getElementById('f_message').value = '';
+  document.getElementById('f_ack').value     = '';
+  document.getElementById('f_sent_to').selectedIndex = -1;
+
+  // clear dates in the UI
+  document.getElementById('f_from').value = '';
+  document.getElementById('f_to').value   = '';
+
+  // clear dates in state
+  state.filters = {
+    sensor_id:'', level:'', type:'', message:'',
+    acknowledged:'', sent_to:[],
+    created_from:'', created_to:''
+  };
+
+  state.page = 1;
+  fetchAlerts().catch(err=>showToast(err.message));
+});
+
+    document.getElementById('pgPrev').addEventListener('click', (e)=>{ e.preventDefault(); if(state.page>1){ state.page--; fetchAlerts().catch(err=>showToast(err.message)); }});
+
+    document.getElementById('pgNext').addEventListener('click', (e)=>{
+
+      e.preventDefault();
+      const totalPages = Math.max(1, Math.ceil((state.total||0)/state.per_page));
+      if(state.page<totalPages){ state.page++; fetchAlerts().catch(err=>showToast(err.message)); }
+    });
+    document.getElementById('pgInput').addEventListener('change', (e)=>{
+      const v = parseInt(e.target.value||'1',10);
+      const totalPages = Math.max(1, Math.ceil((state.total||0)/state.per_page));
+      state.page = Math.min(Math.max(1,v), totalPages);
+      fetchAlerts().catch(err=>showToast(err.message));
+    });
+    document.getElementById('pgSize').addEventListener('change', (e)=>{
+      state.per_page = parseInt(e.target.value,10);
+      state.page = 1;
+      fetchAlerts().catch(err=>showToast(err.message));
+    });
+    document.getElementById('viewClose').addEventListener('click', ()=> closeViewModal());
+
+document.getElementById('viewDlg').addEventListener('click', (e)=>{ if(e.target.id==='viewDlg') closeViewModal(); });
+
+document.querySelector('#tbl').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-act="view"]');
+  if (!btn) return;
+  e.preventDefault();
+  const id  = btn.getAttribute('data-id');
+  const row = state.items.find(x => String(x.id) === String(id));
+  openViewModal(row);
+});
+    /* ============= INIT ============= */
+    (async function init(){
+      try{
+        await Promise.all([fetchSensors(), fetchUsers()]);
+      }catch(e){ /* non-blocking */ }
+      fetchAlerts().catch(err=>showToast(err.message));
+    })();
+  </script>
+</body>
+</html>

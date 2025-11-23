@@ -1062,7 +1062,7 @@ function hideLoading() {
     const result = await apiGradeQuiz({
       quiz_id: state.quizId,
       username: state.username || null,
-      social: state.social || null,
+      social: state.usersocial || null,
       answers: answersPayload,
     });
 

@@ -24,44 +24,39 @@
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
   <style>
-    /* Light, calm background */
     body {
       background: radial-gradient(40% 30% at 50% 0%, rgba(125, 211, 252, 0.25) 0%, rgba(236, 253, 245, 0.35) 35%, #ffffff 70%);
-      /* remove forced white text; let Tailwind control text colors */
       min-height: 100vh;
     }
     .glass { backdrop-filter: blur(10px); background: rgba(255,255,255,0.7); }
 
-    /* Visual states for pills/chips you toggle via JS */
     .lang-pill,
     .level-pill,
     .topic-pill {
       transition: background-color .15s, border-color .15s, color .15s;
-      border-color: rgb(226 232 240); /* slate-200 */
+      border-color: rgb(226 232 240);
       background-color: #fff;
-      color: rgb(30 41 59); /* slate-800 */
+      color: rgb(30 41 59);
     }
     .lang-pill.active,
     .level-pill.active {
-      border-color: rgb(134 239 172); /* emerald-300 */
-      background-color: rgb(240 253 244); /* emerald-50 */
-      color: rgb(21 128 61); /* emerald-700 */
+      border-color: rgb(134 239 172);
+      background-color: rgb(240 253 244);
+      color: rgb(21 128 61);
     }
     .topic-pill.selected {
-      border-color: rgb(56 189 248); /* sky-400-ish */
-      background-color: rgb(240 249 255); /* sky-50 */
-      color: rgb(2 132 199); /* sky-600 */
+      border-color: rgb(56 189 248);
+      background-color: rgb(240 249 255);
+      color: rgb(2 132 199);
     }
-    /* Always render code LTR inside an RTL page */
     pre, pre code {
       direction: ltr;
       text-align: left;
-      unicode-bidi: plaintext; /* keeps numbers/symbols sane in mixed bidi */
+      unicode-bidi: plaintext;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 0.925rem;
       line-height: 1.6;
     }
-    /* Optional: softer container using your glass card look */
     pre {
       border-radius: 0.5rem;
     }
@@ -95,7 +90,6 @@
   </style>
 </head>
 <body class="font-sans text-slate-800">
-  <!-- Top halo -->
   <div class="pointer-events-none absolute inset-x-0 -top-24 z-0 h-64 bg-gradient-to-b from-sky-200/60 to-transparent blur-2xl"></div>
 
   <header class="relative z-10 mx-auto w-full max-w-6xl px-5 pt-8">
@@ -120,9 +114,12 @@
   </header>
 
   <main class="relative z-10 mx-auto mt-6 w-full max-w-6xl px-5 pb-24">
-    <!-- CONFIG CARD -->
+
     <section id="configCard" class="glass relative w-full overflow-hidden rounded-2xl border border-slate-200 p-5 md:p-6 shadow-soft">
+      
+
       <div class="mb-4 flex items-center justify-between">
+
         <div>
           <h3 class="text-lg md:text-xl font-semibold text-slate-900">اختر إعدادات الاختبار</h3>
           <p class="mt-1 text-sm text-slate-600">حدّد اللغة والمستوى والمواضيع، ثم ابدأ خلال ثوانٍ.</p>
@@ -133,9 +130,30 @@
           </svg>
         </div>
       </div>
+      <div class="mt-6 grid gap-4 sm:grid-cols-2">
+      <div class="space-y-2">
+        <p class="text-sm text-slate-600">اسمك</p>
+        <input 
+          id="username"
+          type="text" 
+          placeholder="اكتب اسمك هنا"
+          required
+          class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm shadow-soft focus:border-emerald-500 focus:ring-emerald-500"
+        />
+      </div>
 
+      <div class="space-y-2">
+        <p class="text-sm text-slate-600">رابط حسابك (فيسبوك / لينكدإن / تويتر / Reddit)</p>
+        <input 
+          id="usersocial"
+          type="url" 
+          placeholder="ضع رابط حسابك هنا https://"
+          class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm shadow-soft focus:border-emerald-500 focus:ring-emerald-500"
+        />
+      </div>
+    </div>
+    <br>
       <div class="grid gap-4 sm:grid-cols-3">
-        <!-- Language -->
         <div class="space-y-2">
           <p class="text-sm text-slate-600">اللغة</p>
           <div id="langPills" class="flex gap-2">
@@ -143,7 +161,6 @@
             <button type="button" class="lang-pill rounded-full px-3 py-1 border" data-lang="javascript">جافاسكريبت</button>
           </div>
         </div>
-        <!-- Level -->
         <div class="space-y-2">
           <p class="text-sm text-slate-600">المستوى</p>
           <div id="levelPills" class="flex gap-2 mt-2">
@@ -152,7 +169,6 @@
             <button type="button" class="level-pill rounded-full px-3 py-1 border" data-level="advanced">متقدم</button>
           </div>
         </div>
-        <!-- Number -->
         <div class="space-y-2">
           <p class="text-sm text-slate-600">عدد الأسئلة</p>
           <div class="flex items-center gap-3">
@@ -162,7 +178,6 @@
         </div>
       </div>
 
-      <!-- Topics -->
       <div class="mt-4">
         <p class="mb-2 text-sm text-slate-600">المواضيع</p>
         <div id="topicsWrap" class="flex flex-wrap gap-2 mt-3">
@@ -190,7 +205,6 @@
       </div>
     </section>
 
-    <!-- QUIZ CARD -->
     <section id="quizCard" class="mt-6 hidden glass relative w-full overflow-hidden rounded-2xl border border-slate-200 p-5 md:p-6 shadow-soft">
       <div class="mb-4 flex items-center justify-between">
         <div>
@@ -213,7 +227,6 @@
       </div>
     </section>
 
-    <!-- RESULT CARD -->
     <section id="resultCard" class="mt-6 hidden glass relative w-full overflow-hidden rounded-2xl border border-slate-200 p-5 md:p-6 shadow-soft">
       <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -278,25 +291,18 @@
     صُمّم بروح هادئة — ألوان فاتحة، تجربة RTL عربية، تركيز على البساطة.
   </footer>
 
-  <!-- Ambient blobs -->
   <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
     <div class="absolute -left-24 top-32 h-64 w-64 animate-pulse rounded-full bg-emerald-200/40 blur-3xl"></div>
     <div class="absolute -right-24 bottom-40 h-64 w-64 animate-pulse rounded-full bg-sky-200/40 blur-3xl"></div>
   </div>
 
-  <!-- Funny Arabic Loading Overlay -->
-<div id="loadingOverlay" class="fixed inset-0 z-50 hidden">
+<div id="loadingOverlay" class="fixed inset-0 z-50 hidden flex items-center justify-center">
   <div class="absolute inset-0 bg-white/70 backdrop-blur-sm"></div>
-
   <div class="relative z-10 mx-auto mt-28 w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-soft">
-    <!-- Spinner -->
     <div class="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-emerald-500"></div>
-
-    <!-- Message -->
     <p id="loadingMsg" class="text-slate-800 text-sm leading-6">
       بنعملك أساله مخصوص ليك عشان انت مبرمج جامد 😎 
     </p>
-
     <div class="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
       <div id="loadingBar" class="h-full w-0 rounded-full bg-gradient-to-l from-emerald-500 to-teal-500"></div>
     </div>
@@ -308,19 +314,20 @@
 </div>
 
   <script>
-    // ------------------ STATE ------------------
     let state = {
-      language: null,            // e.g. "python"
+      quizId: null,
+      username: null,
+      usersocial: null,
+      language: null,
       level: "beginner",
-      selectedTopics: [],        // array of topic NAMES (not IDs)
+      selectedTopics: [],    
       numQuestions: 10,
-      compact: true,
+      compact: false,
       questions: null,
       answers: {},
       result: null,
     };
 
-    // ------------------ HELPERS ------------------
     const $ = (s) => document.querySelector(s);
     const $$ = (s) => Array.from(document.querySelectorAll(s));
     const el = (tag, cls = "", html = "") => {
@@ -330,7 +337,6 @@
       return e;
     };
 
-    // Escape HTML for safety when inserting code/plain text (no replaceAll for Safari)
     function esc(str) {
       return String(str)
         .replace(/&/g, "&amp;")
@@ -338,16 +344,10 @@
         .replace(/>/g, "&gt;");
     }
 
-    // Convert Markdown-ish fenced code blocks to HTML <pre><code class="language-xxx">
-    // Supports:
-    //   ```python\nprint(1)\n```
-    //   python```\nprint(1)\n```   (custom prefix style)
-    //   ```\nprint(1)\n```
-    function renderRichQuestion(text) {
-  // normalize newlines — مهم جدًا
-  text = text.replace(/\r\n/g, "\n");
 
-  // match ```lang\n code \n```
+    function renderRichQuestion(text) {
+    text = text.replace(/\r\n/g, "\n");
+
   const fenceRe = /```([\w+-]*)\n([\s\S]*?)```/g;
 
   let lastIndex = 0;
@@ -355,7 +355,6 @@
   let match;
 
   while ((match = fenceRe.exec(text)) !== null) {
-    // النص قبل بلوك الكود
     const before = text.slice(lastIndex, match.index).trim();
     if (before) {
       const p = el(
@@ -369,7 +368,6 @@
     const lang = match[1] || "plaintext";
     const code = match[2];
 
-    // <pre><code>
     const pre = el(
       "pre",
       "my-2 rounded-lg border border-slate-200 bg-slate-50 p-3 overflow-auto"
@@ -378,7 +376,7 @@
 
     const codeEl = el("code", `language-${lang}`);
     codeEl.setAttribute("dir", "ltr");
-    codeEl.textContent = code; // مهم جداً: استخدم textContent مش innerHTML
+    codeEl.textContent = code;
 
     pre.appendChild(codeEl);
     frag.appendChild(pre);
@@ -386,7 +384,6 @@
     lastIndex = fenceRe.lastIndex;
   }
 
-  // الجزء الأخير بعد آخر code block
   const tail = text.slice(lastIndex).trim();
   if (tail) {
     const p = el(
@@ -399,9 +396,6 @@
 
   return frag;
 }
-
-
-
     function loadingSkeleton() {
       return `
         <div class='grid gap-4 md:grid-cols-2'>
@@ -409,17 +403,14 @@
           <div class='h-28 animate-pulse rounded-lg bg-slate-100'></div>
         </div>`;
     }
-
-    // ------------------ API ------------------
     async function apiGenerateQuiz({ topics, language, level, num_questions }) {
       const res = await fetch(`/generate-quiz`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // NOTE: we only send topics by NAME + language/level; backend will map topic -> URL from DB
         body: JSON.stringify({ topics, language, level, num_questions }),
       });
       if (!res.ok) throw new Error("generate-quiz " + res.status);
-      return res.json(); // {questions:[...]}
+      return res.json();
     }
 
     async function apiSubmitQuiz({ questions, answers }) {
@@ -432,7 +423,6 @@
       return res.json();
     }
 
-    // ------------------ READ HARD-CODED HTML ------------------
     function getAllTopicsFor(lang) {
   const L = normLang(lang);
   return $$("#topicsWrap .topic-pill")
@@ -468,49 +458,43 @@
 const normLang = (s) => (s || "").toString().trim().toLowerCase();
 
 
-// Build one pill <button>
   function makeTopicPill({ id, lang, title }) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "topic-pill rounded-full px-4 py-1.5 border";
   btn.dataset.id = id;
-  btn.dataset.lang = normLang(lang);   // normalize here
+  btn.dataset.lang = normLang(lang);
   btn.dataset.topic = title;
   btn.textContent = title;
   return btn;
 }
 
 
-// Fetch from /topics and inject buttons
 async function loadTopics() {
   const wrap = document.getElementById("topicsWrap");
   if (!wrap) return;
 
-  // optional: small loading state
   wrap.innerHTML = `<span class="text-xs text-slate-500">… بيتم تحميل المواضيع</span>`;
 
   let rows = [];
   try {
     const res = await fetch("/topics");
     if (!res.ok) throw new Error(res.status);
-    rows = await res.json(); // [{id, lang, title}, ...]
+    rows = await res.json();
   } catch (e) {
     wrap.innerHTML = `<span class="text-xs text-rose-600">تعذّر تحميل المواضيع</span>`;
     return;
   }
 
-  // sort by lang then title (optional)
   rows.sort((a, b) => {
     const la = normLang(a.lang), lb = normLang(b.lang);
     if (la !== lb) return la.localeCompare(lb);
     return a.title.localeCompare(b.title, "en");
   });
 
-  // fill
   wrap.innerHTML = "";
   rows.forEach((row) => wrap.appendChild(makeTopicPill(row)));
 
-  // (Re)bind pill handlers + apply current language filter/selection
   renderTopics();
 }
 
@@ -528,16 +512,12 @@ function renderTopics() {
   const already = state.selectedTopics.includes(t);
 
   if (already) {
-    // إلغاء الاختيار
     state.selectedTopics = state.selectedTopics.filter(x => x !== t);
   } else {
-    // منع اختيار أكثر من 3
     if (state.selectedTopics.length >= 3) {
-      // Optional: اهتزاز خفيف للزر
       btn.classList.add("shake");
       setTimeout(() => btn.classList.remove("shake"), 400);
 
-      // Optional: رسالة قصيرة
       showToast("احنا مش قدك اختار 3 مواضيع بس😂");
 
       return;
@@ -553,9 +533,8 @@ function renderTopics() {
 }
 
     function ensureFences(text, langHint = "python") {
-  if (/```/.test(text)) return text; // already fenced
+  if (/```/.test(text)) return text;
 
-  // Try split by double newline: "prompt\n\n<code>"
   const dd = text.split(/\n{2,}/);
   if (dd.length > 1) {
     const head = dd.shift().trimEnd();
@@ -563,7 +542,6 @@ function renderTopics() {
     if (tail) return `${head}\n\n\`\`\`${langHint}\n${tail}\n\`\`\``;
   }
 
-  // Otherwise, split at first Arabic/English question mark or colon
   const m = text.match(/^(.*?)([؟?:]\s*)([\s\S]+)$/);
   if (m) {
     const head = m[1].trimEnd() + m[2];
@@ -571,10 +549,9 @@ function renderTopics() {
     if (tail) return `${head}\n\n\`\`\`${langHint}\n${tail}\n\`\`\``;
   }
 
-  return text; // fallback
+  return text;
 }
 
-    // ------------------ QUESTIONS UI ------------------
     function renderQuestions() {
       const wrap = $("#questionsWrap");
       wrap.innerHTML = "";
@@ -588,7 +565,6 @@ function renderTopics() {
         `));
         card.appendChild(header);
 
-        // Question text with possible fenced code → convert to HTML
         const langHint =
           (state.language) ||
           (/python|بايثون/i.test(q.topic) ? "python" :
@@ -599,7 +575,6 @@ function renderTopics() {
         qContainer.appendChild(renderRichQuestion(qtext));
         card.appendChild(qContainer);
 
-        // Options (MCQ)
         if (q.type === "mcq" || Array.isArray(q.options)) {
           const grid = el("div", "mt-3 grid gap-2 sm:grid-cols-2");
           q.options.forEach((opt, i) => {
@@ -624,7 +599,6 @@ function renderTopics() {
           card.appendChild(grid);
         }
 
-        // Optional explanation
         if (!state.compact && q.explanation) {
           const hint = el("div", "mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700");
           hint.innerHTML = `<span class="font-medium text-slate-900">تلميح:</span> ${esc(q.explanation)}`;
@@ -643,10 +617,10 @@ function renderTopics() {
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error("submit-quiz " + res.status);
-  return res.json(); // مثلاً يرجّع { share_id, share_url }
+  return res.json(); 
 }
 
-    function gradeQuiz(questions, answersArray) {
+  function gradeQuiz(questions, answersArray) {
   const total = questions.length;
   let score = 0;
   const per = {};
@@ -693,18 +667,62 @@ function renderTopics() {
   };
 }
 
-
 function renderResult(data) {
-  // --- ملخص الدرجات ---
+  // ---- السكور العام ----
   $("#scoreText").textContent = `${data.score} / ${data.total}`;
   const pct = Math.round((data.score / data.total) * 100);
   $("#scoreBar").style.width = pct + "%";
 
-  // --- نقاط الضعف ---
+  // ---- per_topic + weak_topics ----
+  const perTopicEntries = data.per_topic
+    ? Object.entries(data.per_topic) // [["Access Items", {correct, total}], ...]
+    : [];
+
+  const weakTopics = [];
+
+  const perWrap = $("#perTopicWrap");
+  perWrap.innerHTML = "";
+
+  perTopicEntries.forEach(([topic, stats]) => {
+    const pctTopic = Math.round((stats.correct / stats.total) * 100);
+    const isWeak = pctTopic < 70;
+
+    if (stats.total > 0 && isWeak) {
+      weakTopics.push(topic);
+    }
+
+    const row = el(
+      "div",
+      "rounded-xl border border-slate-200 bg-white p-4 shadow-soft"
+    );
+    row.innerHTML = `
+      <div class="mb-2 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <h4 class="text-base font-semibold text-slate-900">${topic}</h4>
+          <span class="inline-flex items-center gap-1 rounded-full border ${
+            isWeak
+              ? "border-rose-200 bg-rose-50 text-rose-700"
+              : "border-emerald-200 bg-emerald-50 text-emerald-700"
+          } px-3 py-1 text-xs">${pctTopic}%</span>
+        </div>
+        <span class="text-sm text-slate-600">
+          ${stats.correct} من ${stats.total} إجابات صحيحة
+        </span>
+      </div>
+      <div class="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+        <div class="h-full rounded-full ${
+          isWeak ? "bg-rose-400" : "bg-emerald-500"
+        }" style="width:${pctTopic}%"></div>
+      </div>`;
+    perWrap.appendChild(row);
+  });
+
+  // ---- جزء الـ weak topics ----
   const weak = $("#weakWrap");
   weak.innerHTML = "";
-  if (data.weak_topics?.length) {
-    data.weak_topics.forEach((t) => {
+
+  if (weakTopics.length) {
+    weakTopics.forEach((t) => {
       const b = el(
         "span",
         "inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs text-rose-700",
@@ -712,6 +730,7 @@ function renderResult(data) {
       );
       weak.appendChild(b);
     });
+    $("#focusWeakBtn")?.classList.remove("hidden");
   } else {
     weak.appendChild(
       el(
@@ -723,39 +742,7 @@ function renderResult(data) {
     $("#focusWeakBtn")?.classList.add("hidden");
   }
 
-  // --- الأداء لكل توبك ---
-  const perWrap = $("#perTopicWrap");
-  perWrap.innerHTML = "";
-  (data.per_topic || []).forEach((t) => {
-    const pctTopic = Math.round((t.correct / t.total) * 100);
-    const isWeak = pctTopic < 70;
-    const row = el(
-      "div",
-      "rounded-xl border border-slate-200 bg-white p-4 shadow-soft"
-    );
-    row.innerHTML = `
-      <div class="mb-2 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <h4 class="text-base font-semibold text-slate-900">${t.topic}</h4>
-          <span class="inline-flex items-center gap-1 rounded-full border ${
-            isWeak
-              ? "border-rose-200 bg-rose-50 text-rose-700"
-              : "border-emerald-200 bg-emerald-50 text-emerald-700"
-          } px-3 py-1 text-xs">${pctTopic}%</span>
-        </div>
-        <span class="text-sm text-slate-600">${t.correct} من ${
-      t.total
-    } إجابات صحيحة</span>
-      </div>
-      <div class="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-        <div class="h-full rounded-full ${
-          isWeak ? "bg-rose-400" : "bg-emerald-500"
-        }" style="width:${pctTopic}%"></div>
-      </div>`;
-    perWrap.appendChild(row);
-  });
-
-  // --- عرض الأسئلة الغلط ---
+  // ---- الأسئلة الخاطئة ----
   const wrongWrap = $("#wrongWrap");
   if (wrongWrap) {
     wrongWrap.innerHTML = "";
@@ -766,7 +753,7 @@ function renderResult(data) {
         el(
           "div",
           "rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800",
-          "رائع! أجبت عن كل الأسئلة بشكل صحيح ✅"
+          "رائع! أجبت عن كل الأسئلة بشكل صحيح"
         )
       );
     } else {
@@ -778,27 +765,37 @@ function renderResult(data) {
       wrongWrap.appendChild(title);
 
       const list = el("div", "space-y-3");
+
       wrong.forEach((item) => {
-        const { question: q, user_index, correct_index } = item;
+        const { question_id, user_index, correct_index, topic } = item;
+
+        // نجيب السؤال الأصلي من state.questions
+        const q =
+          (state.questions || []).find((qq) => qq.id === question_id) || {};
 
         const card = el(
           "div",
           "rounded-xl border border-slate-200 bg-white p-3"
         );
 
+        const qTopic = q.topic || topic || "غير محدد";
+
         const qMeta = el(
           "div",
           "mb-1 text-xs text-slate-500",
-          `موضوع: ${q.topic || "غير محدد"}`
+          `موضوع: ${qTopic}`
         );
         card.appendChild(qMeta);
 
         const langHint =
           state.language ||
-          (/python|بايثون/i.test(q.topic) ? "python" :
-           /javascript|جافاسكريبت/i.test(q.topic) ? "javascript" : "plaintext");
+          (/python|بايثون/i.test(qTopic)
+            ? "python"
+            : /javascript|جافاسكريبت/i.test(qTopic)
+            ? "javascript"
+            : "plaintext");
 
-        const qtext = ensureFences(q.question || "", langHint);
+        const qtext = ensureFences(q.question || "", langHint); // backend بيرجع field اسمه "question"
         const qContainer = el("div");
         qContainer.appendChild(renderRichQuestion(qtext));
         card.appendChild(qContainer);
@@ -815,10 +812,12 @@ function renderResult(data) {
           "mt-2 space-y-1 rounded-lg bg-slate-50 p-2 text-xs"
         );
         answersBox.innerHTML = `
-          <div><span class="font-semibold text-slate-900">إجابتك:</span>
+          <div>
+            <span class="font-semibold text-slate-900">إجابتك:</span>
             <span class="text-slate-800">${esc(ua ?? "—")}</span>
           </div>
-          <div><span class="font-semibold text-emerald-700">الإجابة الصحيحة:</span>
+          <div>
+            <span class="font-semibold text-emerald-700">الإجابة الصحيحة:</span>
             <span class="text-slate-900">${esc(ca ?? "—")}</span>
           </div>
         `;
@@ -843,11 +842,11 @@ function renderResult(data) {
   }
 }
 
+
 function copyToClipboard(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     return navigator.clipboard.writeText(text);
   }
-  // fallback قديم
   const ta = document.createElement("textarea");
   ta.value = text;
   ta.style.position = "fixed";
@@ -875,18 +874,15 @@ function shareQuizResult() {
 
   const url = state.result.share_url;
 
-  // نحاول ننسخ للرؤية الحديثة
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url)
       .then(() => {
         showToast("تم نسخ رابط النتيجة 🤝");
       })
       .catch(() => {
-        // fallback لو الـ clipboard رفض
         alert("انسخ الرابط التالي وشاركه:\n\n" + url);
       });
   } else {
-    // متصفحات أقدم
     alert("انسخ الرابط التالي وشاركه:\n\n" + url);
   }
 }
@@ -894,12 +890,9 @@ function shareQuizResult() {
 
 
 function printQuiz() {
-  window.print(); // تقدر تزود @media print للستايل بعدين
+  window.print();
 }
 
-
-
-    // --- Funny loading overlay ---
 const funnyLines = [
   "بنعملك أساله مخصوص ليك عشان انت مبرمج جامد 😎 ",
   "بنشحّن الأسئلة… امسك العصير لحد ما نرجع 🍹",
@@ -922,7 +915,6 @@ function showLoading() {
   lineIdx = Math.floor(Math.random() * funnyLines.length);
   msg.textContent = funnyLines[lineIdx];
 
-  // غيّر الجملة كل 1.4 ثانية
   loadingTimer = setInterval(() => {
     lineIdx = (lineIdx + 1) % funnyLines.length;
     msg.textContent = funnyLines[lineIdx];
@@ -940,9 +932,7 @@ function hideLoading() {
 }
 
 
-    // ------------------ EVENTS ------------------
     function attachEvents() {
-      // number range
       const num = $("#numQuestions");
       const badge = $("#numBadge");
       if (num && badge) {
@@ -951,9 +941,6 @@ function hideLoading() {
           badge.textContent = num.value;
         });
       }
-
-      // compact toggle
-
 
       const toggle = document.getElementById('compactToggle');
       const dot = document.getElementById('compactDot');
@@ -977,13 +964,13 @@ function hideLoading() {
         });
       }
 
-
-
-
-      // start quiz
       $("#startBtn")?.addEventListener("click", async () => {
+        state.username = document.getElementById('username').value.trim();
+        state.usersocial = document.getElementById('usersocial').value.trim();
+        if (!state.username){
+          return showToast('الاسم مطلوب لبدأ الكويز عشان نفتخر بيك 😂');
+        }
         if (!state.language) {
-          // pick first language pill if none chosen
           const firstLang = $("#langPills .lang-pill");
           if (firstLang) {
             state.language = firstLang.dataset.lang;
@@ -998,15 +985,15 @@ function hideLoading() {
         showLoading();
         try {
           const data = await apiGenerateQuiz({
-            topics: state.selectedTopics,      // names
+            topics: state.selectedTopics,
             language: state.language,
             level: state.level,
             num_questions: state.numQuestions,
           });
           if (!data?.questions?.length) throw new Error("No questions");
+          state.quizId = data.id;
           state.questions = data.questions;
         } catch (e) {
-          // fallback local mock
           const topics = state.selectedTopics.length ? state.selectedTopics : ["موضوع عام"];
           state.questions = topics.slice(0, state.numQuestions).map((t, i) => ({
             id: `q${i + 1}`,
@@ -1024,14 +1011,13 @@ function hideLoading() {
           }
         }
         finally {
-    hideLoading(); // <<< اقفل اللودينج مهما حصل
+    hideLoading();
   }
 
         state.answers = {};
         renderQuestions();
       });
 
-      // back
       $("#backBtn")?.addEventListener("click", () => {
         $("#quizCard")?.classList.add("hidden");
         $("#configCard")?.classList.remove("hidden");
@@ -1039,52 +1025,59 @@ function hideLoading() {
         state.answers = {};
       });
 
-      
-            // submit
-$("#submitBtn")?.addEventListener("click", async () => {
-  if (!state.questions) return;
-
-  // 1) جهّز answersArray بالطريقة اللي عندك
-  const answersArray = state.questions.map((q, idx) => {
-    const key = q.id || `q${idx + 1}`;
-    const v = state.answers[key];
-    return typeof v === "number" ? v : -1;
+      async function apiGradeQuiz(payload) {
+  const res = await fetch("/grade-quiz", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
   });
 
-  // 2) احسب النتيجة محليًا
-  const stats = gradeQuiz(state.questions, answersArray);
-  // stats = { score, total, per_topic, weak_topics, wrong_questions }
-
-  // 3) خزّنها في state.result فورًا علشان تعرض للمستخدم
-  state.result = stats;
-
-  // 4) ابعت للـ backend علشان التخزين + share_url (من غير ما تعتمد عليه في الحساب)
-  try {
-    const stored = await apiStoreQuizResult({
-      // النتيجة
-      score: stats.score,
-      total: stats.total,
-      per_topic: stats.per_topic,
-      weak_topics: stats.weak_topics,
-      wrong_questions: stats.wrong_questions,
-
-      // ميتاداتا مفيدة للتخزين
-      language: state.language,
-      level: state.level,
-      topics: state.selectedTopics,
-    });
-
-    // backend ممكن يرجع share_url / share_id
-    if (stored.share_url) {
-      state.result.share_url = stored.share_url;
-    }
-    if (stored.share_id) {
-      state.result.share_id = stored.share_id;
-    }
-  } catch (e) {
-    console.error("Failed to store result", e);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Grade failed: ${res.status} - ${txt}`);
   }
 
+  return await res.json();
+}
+
+      $("#submitBtn")?.addEventListener("click", async () => {
+  if (!state.questions || !state.quizId) return;
+
+  // جهّز answers كما يفهمها الـ backend
+  const answersPayload = state.questions.map((q, idx) => {
+    const key = q.id || `q${idx + 1}`;
+    const v = state.answers[key];
+
+    return {
+      question_id: q.id,                          // UUID جاي من الـ backend
+      user_index: typeof v === "number" ? v : null, // null لو ما جاوبش
+    };
+  });
+
+  try {
+    const result = await apiGradeQuiz({
+      quiz_id: state.quizId,
+      username: state.username || null,
+      social: state.social || null,
+      answers: answersPayload,
+    });
+
+    // النتيجة من الـ backend (GradeQuizOut)
+    state.result = result;
+
+    // لو عندك share_url / share_id في الـ response ممكن تضيفهم هنا
+    if (result.share_url) state.result.share_url = result.share_url;
+    if (result.share_id) state.result.share_id = result.share_id;
+
+  } catch (e) {
+    console.error("Failed to grade quiz", e);
+    showToast("حصل خطأ أثناء تصحيح الاختبار. حاول تاني بعد شوية.");
+    return;
+  }
+
+  // إظهار كارت النتيجة
   $("#quizCard")?.classList.add("hidden");
   $("#resultCard")?.classList.remove("hidden");
   renderResult(state.result);
@@ -1092,17 +1085,7 @@ $("#submitBtn")?.addEventListener("click", async () => {
 
 
 
-      // focus weak
-      // $("#focusWeakBtn")?.addEventListener("click", () => {
-      //   if (!state.result?.weak_topics?.length) return;
-      //   state.selectedTopics = state.result.weak_topics.slice();
-      //   $("#resultCard")?.classList.add("hidden");
-      //   $("#configCard")?.classList.remove("hidden");
-      //   renderTopics();
-      //   window.scrollTo({ top: 0, behavior: "smooth" });
-      // });
-
-      // new settings
+   
       $("#newSettingsBtn")?.addEventListener("click", () => {
         $("#resultCard")?.classList.add("hidden");
         $("#configCard")?.classList.remove("hidden");
@@ -1121,7 +1104,6 @@ $("#submitBtn")?.addEventListener("click", async () => {
   toast.textContent = message;
   toast.classList.remove("hidden");
   
-  // Force reflow to restart animation
   void toast.offsetWidth;
 
   toast.classList.add("toast-show");
@@ -1132,25 +1114,20 @@ $("#submitBtn")?.addEventListener("click", async () => {
   }, timeout);
 }
 
-    // ------------------ INIT ------------------
     async function init() {
-  // set initial language from the first pill or default
   
   const firstLangBtn = document.querySelector("#langPills .lang-pill");
   state.language = firstLangBtn ? normLang(firstLangBtn.dataset.lang) : "python";
 
   renderPills();
 
-  // wait for API -> DOM buttons
-  await loadTopics();     // <<< IMPORTANT
+  await loadTopics();  
 
-  // preselect first 2 visible topics
   const topics = getAllTopicsFor(state.language);
   state.selectedTopics = topics.slice(0, Math.min(2, topics.length));
 
   renderTopics();
   attachEvents();
-  // (optional) sanity log
   console.log("Loaded topics:", $$("#topicsWrap .topic-pill").length);
 }
 

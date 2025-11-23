@@ -190,7 +190,7 @@
           <label class="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
             <span>وضع الشرح المختصر</span>
             <button type="button" id="compactToggle" class="relative h-6 w-11 rounded-full bg-emerald-300">
-              <span class="absolute right-[22px] top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition" id="compactDot"></span>
+              <span class="absolute right-[22px] top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition" style="right: 22px;" id="compactDot"></span>
             </button>
             
           </label>
@@ -948,16 +948,18 @@ function hideLoading() {
       if (toggle && dot) {
         toggle.addEventListener("click", () => {
 
-          state.compact = !state.compact;
-
+          
+          console.log(`state.compact: ${state.compact}`)
           if (state.compact) {
             toggle.classList.remove("bg-slate-200");
             toggle.classList.add("bg-emerald-300");
             dot.style.right = "22px";
+            state.compact = !state.compact;
           } else {
             toggle.classList.remove("bg-emerald-300");
             toggle.classList.add("bg-slate-200");
             dot.style.right = "2px";
+            state.compact = !state.compact;
           }
 
           if (state.questions) renderQuestions();
